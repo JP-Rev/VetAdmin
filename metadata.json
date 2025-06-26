@@ -1,0 +1,6 @@
+{
+  "name": "VetAdmin II",
+  "description": "A React-based application for managing clients, pets, appointments, products, and medical histories for a veterinary clinic. It uses Tailwind CSS for styling and local storage for data persistence.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}
