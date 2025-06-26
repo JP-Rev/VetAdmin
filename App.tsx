@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
-import ReactDOM from 'react-dom'; // Import ReactDOM for Portal
+import ReactDOM from 'react-dom';
 import { HashRouter, Routes, Route, Navigate, useLocation, NavLink } from 'react-router-dom';
-import { DataProvider, useData } from './contexts/DataContext'; // useData import
+import { SupabaseDataProvider, useSupabaseData } from './contexts/SupabaseDataContext';
 import { Sidebar } from './components/Sidebar';
 import { DashboardPage } from './pages/DashboardPage';
 import { ClientsPage } from './pages/ClientsPage';
@@ -15,7 +14,7 @@ import { StatisticsPage } from './pages/StatisticsPage';
 import { SettingsPage } from './pages/SettingsPage'; 
 import { ExpensesPage } from './pages/ExpensesPage'; 
 import { APP_TITLE } from './constants';
-import { Menu as IconMenu } from 'lucide-react'; 
+import { Menu as IconMenu, AlertCircle, Loader2 } from 'lucide-react';
 
 const ScrollToTop: React.FC = () => {
   const { pathname } = useLocation();
@@ -27,15 +26,40 @@ const ScrollToTop: React.FC = () => {
   return null;
 };
 
-const AppContent: React.FC = () => { // Renamed from App to AppContent
+const LoadingScreen: React.FC = () => (
+  <div className="min-h-screen bg-secondary-100 flex items-center justify-center">
+    <div className="text-center">
+      <Loader2 className="h-12 w-12 animate-spin text-primary-600 mx-auto mb-4" />
+      <h2 className="text-xl font-semibold text-secondary-700 mb-2">Cargando VetAdmin</h2>
+      <p className="text-secondary-500">Conectando con la base de datos...</p>
+    </div>
+  </div>
+);
+
+const ErrorScreen: React.FC<{ error: string; onRetry: () => void }> = ({ error, onRetry }) => (
+  <div className="min-h-screen bg-secondary-100 flex items-center justify-center">
+    <div className="text-center max-w-md mx-auto p-6">
+      <AlertCircle className="h-12 w-12 text-error-600 mx-auto mb-4" />
+      <h2 className="text-xl font-semibold text-secondary-700 mb-2">Error de Conexión</h2>
+      <p className="text-secondary-600 mb-4">{error}</p>
+      <button 
+        onClick={onRetry}
+        className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md transition-colors"
+      >
+        Reintentar
+      </button>
+    </div>
+  </div>
+);
+
+const AppContent: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const { printableContentForPortal } = useData(); // Get printable content from context
+  const { printableContentForPortal, loading, error, refreshData } = useSupabaseData();
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
   
-  // Effect to add/remove class from body when printing to help with styles
   useEffect(() => {
     const beforePrint = () => document.body.classList.add('printing');
     const afterPrint = () => document.body.classList.remove('printing');
@@ -48,6 +72,14 @@ const AppContent: React.FC = () => { // Renamed from App to AppContent
       window.removeEventListener('afterprint', afterPrint);
     };
   }, []);
+
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
+  if (error) {
+    return <ErrorScreen error={error} onRetry={refreshData} />;
+  }
   
   return (
     <>
@@ -118,9 +150,9 @@ const AppContent: React.FC = () => { // Renamed from App to AppContent
 
 const AppWrapper: React.FC = () => (
   <HashRouter>
-    <DataProvider> {/* DataProvider now wraps AppContent */}
+    <SupabaseDataProvider>
       <AppContent />
-    </DataProvider>
+    </SupabaseDataProvider>
   </HashRouter>
 );
 

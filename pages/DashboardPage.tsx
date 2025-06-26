@@ -1,8 +1,6 @@
-
-
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useData } from '../contexts/DataContext';
+import { useSupabaseData } from '../contexts/SupabaseDataContext';
 import { Turno, EstadoVenta } from '../types'; 
 import { Button } from '../components/common/Button';
 import { DailyCashFlow } from '../components/Dashboard/DailyCashFlow'; 
@@ -44,9 +42,8 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon, linkTo, colorCl
   </div>
 );
 
-
 const UpcomingAppointmentItem: React.FC<{ appointment: Turno }> = ({ appointment }) => {
-  const { getClientById, getPetById } = useData();
+  const { getClientById, getPetById } = useSupabaseData();
   const client = getClientById(appointment.cliente_id);
   const pet = getPetById(appointment.mascota_id);
 
@@ -72,9 +69,8 @@ const UpcomingAppointmentItem: React.FC<{ appointment: Turno }> = ({ appointment
 };
 
 export const DashboardPage: React.FC = () => {
-  const { clients, pets, getUpcomingAppointments, ventas } = useData(); 
+  const { clients, pets, getUpcomingAppointments, ventas } = useSupabaseData(); 
   const upcomingAppointments = getUpcomingAppointments().slice(0, 5);
-  // DailyCashFlow now fetches its own data
 
   return (
     <div className="space-y-6">
@@ -88,7 +84,7 @@ export const DashboardPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2"> {/* Upcoming appointments take 2/3 width */}
+        <div className="lg:col-span-2">
             <div className="bg-white p-6 rounded-lg shadow-lg h-full"> 
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-semibold text-secondary-700">Próximos Turnos ({upcomingAppointments.length})</h2>
@@ -113,8 +109,8 @@ export const DashboardPage: React.FC = () => {
             </div>
         </div>
 
-        <div className="lg:col-span-1"> {/* Cash flow takes 1/3 width */}
-          <DailyCashFlow /> {/* Removed report prop */}
+        <div className="lg:col-span-1">
+          <DailyCashFlow />
         </div>
       </div>
     </div>

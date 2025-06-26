@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { DailyCashFlowReportDetails, MetodoPago, CategoriaGasto } from '../../types';
-import { useData } from '../../contexts/DataContext'; 
-import { Button } from '../common/Button'; // Added Button import
-import { Modal } from '../Modal'; // Added Modal import
-import { AppointmentCalendarView } from '../AppointmentCalendarView'; // Added AppointmentCalendarView import
+import { useSupabaseData } from '../../contexts/SupabaseDataContext'; 
+import { Button } from '../common/Button';
+import { Modal } from '../Modal';
+import { AppointmentCalendarView } from '../AppointmentCalendarView';
 import { DollarSign, TrendingUp, TrendingDown, Landmark, CreditCard as CreditCardIcon, AlertCircle, Calendar } from 'lucide-react';
 
 const getTodayDateString = () => new Date().toISOString().split('T')[0];
@@ -22,9 +21,8 @@ const PaymentMethodIcon: React.FC<{ method: MetodoPago, className?: string }> = 
   }
 };
 
-
 export const DailyCashFlow: React.FC = () => {
-  const { getDailyCashFlowReport } = useData();
+  const { getDailyCashFlowReport } = useSupabaseData();
   const [selectedDate, setSelectedDate] = useState<string>(getTodayDateString());
   const [cashFlowReportData, setCashFlowReportData] = useState<DailyCashFlowReportDetails | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -37,7 +35,7 @@ export const DailyCashFlow: React.FC = () => {
       setCashFlowReportData(report);
     } catch (error) {
         console.error("Error fetching cash flow report for date:", selectedDate, error);
-        setCashFlowReportData(null); // Set to null on error
+        setCashFlowReportData(null);
     }
     setIsLoading(false);
   }, [selectedDate, getDailyCashFlowReport]);
@@ -48,7 +46,7 @@ export const DailyCashFlow: React.FC = () => {
   };
 
   const formatDateForDisplay = (dateString: string) => {
-    const date = new Date(dateString + 'T00:00:00'); // Ensure correct parsing in local timezone
+    const date = new Date(dateString + 'T00:00:00');
     return date.toLocaleDateString('es-ES', {
         year: 'numeric',
         month: 'long',
@@ -87,7 +85,7 @@ export const DailyCashFlow: React.FC = () => {
             size="md" 
         >
             <AppointmentCalendarView
-                appointments={[]} // No appointments needed, just date selection
+                appointments={[]}
                 onDateSelect={handleCalendarDateSelect}
             />
         </Modal>
@@ -105,7 +103,7 @@ export const DailyCashFlow: React.FC = () => {
       {!isLoading && cashFlowReportData && (
         <>
             <p className="text-xs text-secondary-500 mb-3 -mt-2">Mostrando reporte para: {formatDateForDisplay(cashFlowReportData.date)}</p>
-            <div className="flex-grow space-y-4 overflow-y-auto pr-1 max-h-[calc(100vh-300px)] sm:max-h-[calc(100vh-350px)]"> {/* Added max-height and overflow */}
+            <div className="flex-grow space-y-4 overflow-y-auto pr-1 max-h-[calc(100vh-300px)] sm:max-h-[calc(100vh-350px)]">
             <div>
               <h4 className="text-sm font-semibold text-secondary-600 mb-2 flex items-center">
                 <TrendingUp className="h-5 w-5 mr-2 text-success-600"/>Ingresos ({Object.keys(cashFlowReportData.incomeByMethod).length} métodos)
@@ -129,7 +127,7 @@ export const DailyCashFlow: React.FC = () => {
 
             <div>
               <h4 className="text-sm font-semibold text-secondary-600 mb-2 flex items-center">
-                <TrendingDown className="h-5 w-5 mr-2 text-error-600"/>Egresos ({Object.keys(cashFlowReportData.expensesByCategory).length} categorí­as)
+                <TrendingDown className="h-5 w-5 mr-2 text-error-600"/>Egresos ({Object.keys(cashFlowReportData.expensesByCategory).length} categorías)
               </h4>
               <div className="space-y-1 pl-1 text-sm">
                 {Object.keys(cashFlowReportData.expensesByCategory).length > 0 ? Object.entries(cashFlowReportData.expensesByCategory).map(([category, amount]) => (
