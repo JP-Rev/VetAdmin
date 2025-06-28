@@ -8,7 +8,7 @@ import { ClientsPage } from './pages/ClientsPage';
 import { PetsPage } from './pages/PetsPage'; 
 import { AppointmentsPage } from './pages/AppointmentsPage';
 import { ProductsPage } from './pages/ProductsPage';
-import { VentasPage } from './pages/VentasPage'; 
+import { Ventas } from './pages/VentasPage'; 
 import { MedicalHistoryPage } from './pages/MedicalHistoryPage';
 import { StatisticsPage } from './pages/StatisticsPage'; 
 import { SettingsPage } from './pages/SettingsPage'; 
@@ -115,7 +115,7 @@ const AppContent: React.FC = () => {
                 <Route path="/appointments" element={<AppointmentsPage />} />
                 
                 <Route path="/products" element={<ProductsPage />} />
-                <Route path="/ventas" element={<VentasPage />} /> 
+                <Route path="/ventas" element={<Ventas />} /> 
 
                 <Route path="/statistics" element={<StatisticsPage />} /> 
                 <Route path="/settings" element={<SettingsPage />} />
