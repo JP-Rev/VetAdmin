@@ -1,6 +1,5 @@
-
 import React, { useState, useMemo } from 'react';
-import { useData } from '../contexts/DataContext';
+import { useSupabaseData } from '../contexts/SupabaseDataContext';
 import { Gasto } from '../types';
 import { Modal } from '../components/Modal';
 import { Button } from '../components/common/Button';
@@ -9,7 +8,7 @@ import { ExpenseFormComponent } from '../components/forms/ExpenseFormComponent';
 import { Plus, Edit3, Trash2, CreditCard as CreditCardIcon } from 'lucide-react';
 
 export const ExpensesPage: React.FC = () => {
-  const { expenses, deleteExpense } = useData();
+  const { expenses, deleteExpense } = useSupabaseData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Gasto | undefined>(undefined);
   const [searchTerm, setSearchTerm] = useState('');
