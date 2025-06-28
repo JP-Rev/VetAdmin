@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useData } from '../contexts/DataContext';
+import { useSupabaseData } from '../contexts/SupabaseDataContext';
 import { Cliente, Mascota, ClienteForm, MascotaForm, Especie, SexoMascota } from '../types';
 import { Modal } from '../components/Modal';
 import { Button } from '../components/common/Button';
@@ -22,7 +22,7 @@ const ClientFormComponent: React.FC<ClientFormProps> = ({ initialData, onSave, o
       : { nombre: '', telefono: '', email: '', domicilio: '' }
   );
   const [errors, setErrors] = useState<Partial<Record<keyof ClienteForm, string>>>({});
-  const { addClient, updateClient } = useData();
+  const { addClient, updateClient } = useSupabaseData();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -78,7 +78,7 @@ export interface PetFormProps {
   onClose: () => void;
 }
 export const PetFormComponent: React.FC<PetFormProps> = ({ clientId, initialData, onSave, onClose }) => {
-  const { addPet, updatePet, breeds } = useData();
+  const { addPet, updatePet, breeds } = useSupabaseData();
   const initialFormState: MascotaForm = {
     nombre: '',
     especie: Especie.PERRO,
@@ -155,7 +155,7 @@ export const PetFormComponent: React.FC<PetFormProps> = ({ clientId, initialData
 
 // Main Clients Page
 export const ClientsPage: React.FC = () => {
-  const { clients, getPetsByClientId, deleteClient, breeds, getMedicalHistoryByPetId, getClientById } = useData();
+  const { clients, getPetsByClientId, deleteClient, breeds, getMedicalHistoryByPetId, getClientById } = useSupabaseData();
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [isPetModalOpen, setIsPetModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Cliente | undefined>(undefined);

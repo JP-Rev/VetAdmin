@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useData } from '../contexts/DataContext';
+import { useSupabaseData } from '../contexts/SupabaseDataContext';
 import { Mascota } from '../types';
 import { Modal } from '../components/Modal';
 import { Button } from '../components/common/Button';
@@ -10,7 +10,7 @@ import { PetFormComponent } from './ClientsPage'; // Re-using PetFormComponent f
 
 
 export const PetsPage: React.FC = () => {
-  const { pets, getClientById, getBreedById, getMedicalHistoryByPetId } = useData();
+  const { pets, getClientById, getBreedById, getMedicalHistoryByPetId } = useSupabaseData();
   const [isPetModalOpen, setIsPetModalOpen] = useState(false);
   const [editingPet, setEditingPet] = useState<Mascota | undefined>(undefined);
   const [searchTerm, setSearchTerm] = useState('');

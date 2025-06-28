@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useData } from '../contexts/DataContext';
+import { useSupabaseData } from '../contexts/SupabaseDataContext';
 import { Raza, RazaForm, Enfermedad, EnfermedadForm, Cirugia, CirugiaForm, Especie } from '../types';
 import { Modal } from '../components/Modal';
 import { Button } from '../components/common/Button';
@@ -15,7 +15,7 @@ interface BreedFormProps {
   onClose: () => void;
 }
 const BreedFormComponent: React.FC<BreedFormProps> = ({ initialData, onSave, onClose }) => {
-  const { addBreed, updateBreed } = useData();
+  const { addBreed, updateBreed } = useSupabaseData();
   const [formData, setFormData] = useState<RazaForm>(
     initialData 
     ? { nombre: initialData.nombre, especie: initialData.especie }
@@ -69,7 +69,7 @@ interface DiseaseFormProps {
   onClose: () => void;
 }
 const DiseaseFormComponent: React.FC<DiseaseFormProps> = ({ initialData, onSave, onClose }) => {
-  const { addDisease, updateDisease } = useData();
+  const { addDisease, updateDisease } = useSupabaseData();
   const [formData, setFormData] = useState<EnfermedadForm>(
     initialData
     ? { nombre: initialData.nombre, descripcion: initialData.descripcion, especie_afectada: initialData.especie_afectada }
@@ -126,7 +126,7 @@ interface SurgeryFormProps {
   onClose: () => void;
 }
 const SurgeryFormComponent: React.FC<SurgeryFormProps> = ({ initialData, onSave, onClose }) => {
-  const { addSurgery, updateSurgery } = useData();
+  const { addSurgery, updateSurgery } = useSupabaseData();
   const [formData, setFormData] = useState<CirugiaForm>(
     initialData
     ? { tipo: initialData.tipo, descripcion: initialData.descripcion, duracion_estimada_min: initialData.duracion_estimada_min, costo_estimado: initialData.costo_estimado }
@@ -186,7 +186,7 @@ const SurgeryFormComponent: React.FC<SurgeryFormProps> = ({ initialData, onSave,
 
 
 export const SettingsPage: React.FC = () => {
-  const { breeds, deleteBreed, diseases, deleteDisease, surgeries, deleteSurgery } = useData();
+  const { breeds, deleteBreed, diseases, deleteDisease, surgeries, deleteSurgery } = useSupabaseData();
   const [activeTab, setActiveTab] = useState<'breeds' | 'diseases' | 'surgeries'>('breeds');
   
   const [isBreedModalOpen, setIsBreedModalOpen] = useState(false);

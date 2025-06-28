@@ -1,8 +1,6 @@
-
-
 import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useData } from '../contexts/DataContext';
+import { useSupabaseData } from '../contexts/SupabaseDataContext';
 import { HistorialMedico, TipoEventoHistorial, Enfermedad, Cirugia, MascotaEnfermedad, MascotaCirugia, Mascota, Cliente, AttachmentFile } from '../types';
 import { Button } from '../components/common/Button';
 import { Modal } from '../components/Modal';
@@ -21,7 +19,7 @@ interface NewEventFormProps {
 }
 
 const NewEventFormComponent: React.FC<NewEventFormProps> = ({ petId, onSave, onClose }) => {
-    const { addMedicalHistoryEvent, diseases, surgeries, recordPetDisease, recordPetSurgery } = useData();
+    const { addMedicalHistoryEvent, diseases, surgeries, recordPetDisease, recordPetSurgery } = useSupabaseData();
     const [tipoEvento, setTipoEvento] = useState<TipoEventoHistorial>(TipoEventoHistorial.CONSULTA);
     const [descripcion, setDescripcion] = useState('');
     const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]); 
@@ -356,7 +354,7 @@ const EditEventFormComponent: React.FC<EditEventFormProps> = ({ initialEvent, on
 export const MedicalHistoryPage: React.FC = () => {
   const { petId } = useParams<{ petId: string }>();
   const navigate = useNavigate();
-  const { getPetById, getClientById, getMedicalHistoryByPetId, updateMedicalHistoryEvent, diseases, surgeries, petDiseases, petSurgeries, printContent, breeds } = useData(); // Removed deleteMedicalHistoryEvent from imports
+  const { getPetById, getClientById, getMedicalHistoryByPetId, updateMedicalHistoryEvent, diseases, surgeries, petDiseases, petSurgeries, printContent, breeds } = useSupabaseData(); // Removed deleteMedicalHistoryEvent from imports
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);

@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { Gasto, GastoForm, CategoriaGasto } from '../../types';
-import { useData } from '../../contexts/DataContext';
+import { useSupabaseData } from '../../contexts/SupabaseDataContext';
 import { Button } from '../common/Button';
 import { FormField } from '../common/FormField';
 import { CATEGORIAS_GASTO } from '../../constants';
@@ -13,7 +12,7 @@ interface ExpenseFormProps {
 }
 
 export const ExpenseFormComponent: React.FC<ExpenseFormProps> = ({ initialData, onSave, onClose }) => {
-  const { addExpense, updateExpense } = useData();
+  const { addExpense, updateExpense } = useSupabaseData();
   const [formData, setFormData] = useState<GastoForm>(
     initialData
       ? { fecha: initialData.fecha, descripcion: initialData.descripcion, monto: initialData.monto, categoria: initialData.categoria }

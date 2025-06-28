@@ -1,8 +1,6 @@
-
-
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { useData } from '../contexts/DataContext';
+import { useSupabaseData } from '../contexts/SupabaseDataContext';
 import { Turno, TurnoForm, Cliente, Mascota, TipoEventoHistorial, EstadoTurno } from '../types';
 import { Modal } from '../components/Modal';
 import { Button } from '../components/common/Button';
@@ -21,7 +19,7 @@ interface AppointmentFormProps {
 }
 
 const AppointmentFormComponent: React.FC<AppointmentFormProps> = ({ initialData, onSave, onClose, preselectedClientId, preselectedPetId }) => {
-  const { clients, getPetsByClientId, addAppointment, updateAppointment, getPetById } = useData();
+  const { clients, getPetsByClientId, addAppointment, updateAppointment, getPetById } = useSupabaseData();
   
   const [formData, setFormData] = useState<TurnoForm>(() => {
     if (initialData) {
@@ -111,7 +109,7 @@ const AppointmentFormComponent: React.FC<AppointmentFormProps> = ({ initialData,
 
 
 export const AppointmentsPage: React.FC = () => {
-  const { appointments, deleteAppointment, getClientById, getPetById, updateAppointment, addMedicalHistoryEvent } = useData();
+  const { appointments, deleteAppointment, getClientById, getPetById, updateAppointment, addMedicalHistoryEvent } = useSupabaseData();
   const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Turno | undefined>(undefined);
   const [filter, setFilter] = useState<EstadoTurno | 'all'>(EstadoTurno.PENDIENTE);

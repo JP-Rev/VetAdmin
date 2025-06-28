@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useData } from '../contexts/DataContext';
+import { useSupabaseData } from '../contexts/SupabaseDataContext';
 import { Venta, Cliente, Mascota, Producto, VentaFormValues, EstadoVenta, Pago, MetodoPago, ReceiptVentaProducto } from '../types'; 
 import { Modal } from '../components/Modal';
 import { Button } from '../components/common/Button';
@@ -14,7 +14,7 @@ interface VentaFormProps {
 }
 
 const VentaFormComponent: React.FC<VentaFormProps> = ({ onSave, onClose }) => { 
-  const { clients, getPetsByClientId, products, addVenta } = useData(); 
+  const { clients, getPetsByClientId, products, addVenta } = useSupabaseData(); 
   const [formData, setFormData] = useState<VentaFormValues>({
     cliente_id: '',
     mascota_id: '',
@@ -152,8 +152,8 @@ const VentaFormComponent: React.FC<VentaFormProps> = ({ onSave, onClose }) => {
 };
 
 // Main Ventas Page
-export const VentasPage: React.FC = () => { 
-  const { ventas, getClientById, getPetById, products, updateVentaStatus, getPaymentsByVentaId, addPayment, printContent } = useData(); 
+export const Ventas: React.FC = () => { 
+  const { ventas, getClientById, getPetById, products, updateVentaStatus, getPaymentsByVentaId, addPayment, printContent } = useSupabaseData(); 
   const [isVentaModalOpen, setIsVentaModalOpen] = useState(false); 
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [selectedVentaForPayment, setSelectedVentaForPayment] = useState<Venta | undefined>(undefined); 

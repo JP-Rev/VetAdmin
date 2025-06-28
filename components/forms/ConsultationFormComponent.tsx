@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { Turno, Enfermedad, Cirugia, TipoEventoHistorial, ConsultationFormState, ConsultationDiseaseItem, ConsultationSurgeryItem, ConsultationVaccinationItem, AttachmentFile } from '../../types';
-import { useData } from '../../contexts/DataContext';
+import { useSupabaseData } from '../../contexts/SupabaseDataContext';
 import { Button } from '../common/Button';
 import { FormField } from '../common/FormField';
 import { Plus, Trash2 } from 'lucide-react';
@@ -15,7 +14,7 @@ interface ConsultationFormComponentProps {
 const generateLocalId = () => `temp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
 export const ConsultationFormComponent: React.FC<ConsultationFormComponentProps> = ({ appointment, onSave, onClose }) => {
-  const { getPetById, getClientById, diseases, surgeries, addMedicalHistoryEvent, recordPetDisease, recordPetSurgery } = useData();
+  const { getPetById, getClientById, diseases, surgeries, addMedicalHistoryEvent, recordPetDisease, recordPetSurgery } = useSupabaseData();
   
   const pet = getPetById(appointment.mascota_id);
   const client = getClientById(appointment.cliente_id);
