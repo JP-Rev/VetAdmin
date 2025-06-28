@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useData } from '../contexts/DataContext';
+import { useSupabaseData } from '../contexts/SupabaseDataContext';
 import { Producto, ProductoForm } from '../types';
 import { Modal } from '../components/Modal';
 import { Button } from '../components/common/Button';
@@ -14,7 +14,7 @@ interface ProductFormProps {
 }
 
 const ProductFormComponent: React.FC<ProductFormProps> = ({ initialData, onSave, onClose }) => {
-  const { addProduct, updateProduct } = useData();
+  const { addProduct, updateProduct } = useSupabaseData();
   const [formData, setFormData] = useState<ProductoForm>(
     initialData
       ? { nombre: initialData.nombre, stock: initialData.stock, precio: initialData.precio, categoria: initialData.categoria }
@@ -82,7 +82,7 @@ const ProductFormComponent: React.FC<ProductFormProps> = ({ initialData, onSave,
 
 // Main Products Page
 export const ProductsPage: React.FC = () => {
-  const { products, deleteProduct } = useData();
+  const { products, deleteProduct } = useSupabaseData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Producto | undefined>(undefined);
   const [searchTerm, setSearchTerm] = useState('');
@@ -195,7 +195,7 @@ export const ProductsPage: React.FC = () => {
        {filteredProducts.some(p => p.stock <= lowStockThreshold) && 
         <div className="mt-4 p-3 bg-error-50 border-l-4 border-error-400 text-error-700 rounded-md flex items-center">
             <AlertTriangle className="h-5 w-5 mr-2 flex-shrink-0"/>
-            <p><span className="font-bold">Alerta de Stock Bajo:</span> Algunos productos tienen stock crítico (&lt;= {lowStockThreshold} unidades).</p>
+            <p><span className="font-bold">Alerta de Stock Bajo:</span> Algunos productos tienen stock crítico (<= {lowStockThreshold} unidades).</p>
         </div>
       }
        {filteredProducts.some(p => p.stock > lowStockThreshold && p.stock <= warningStockThreshold) && 
