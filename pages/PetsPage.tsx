@@ -155,7 +155,7 @@ export const PetsPage: React.FC = () => {
             <p className="mt-1 text-sm text-secondary-500">
                 Para agregar una nueva mascota, primero asegúrese de tener un cliente. Diríjase a la sección de {' '}
                 <Link to="/clients" className="text-primary-600 hover:underline font-semibold">Clientes</Link>,
-                seleccione o cree un cliente, y luego utilice la opción "Agregar Mascota" dentro de los detalles del cliente.
+                seleccione o cree un cliente, y luego utilice la opción "Agregar Mascota\" dentro de los detalles del cliente.
             </p>
           </div>
        )}
