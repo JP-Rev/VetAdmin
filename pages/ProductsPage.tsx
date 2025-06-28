@@ -195,7 +195,7 @@ export const ProductsPage: React.FC = () => {
        {filteredProducts.some(p => p.stock <= lowStockThreshold) && 
         <div className="mt-4 p-3 bg-error-50 border-l-4 border-error-400 text-error-700 rounded-md flex items-center">
             <AlertTriangle className="h-5 w-5 mr-2 flex-shrink-0"/>
-            <p><span className="font-bold">Alerta de Stock Bajo:</span> Algunos productos tienen stock crítico (<= {lowStockThreshold} unidades).</p>
+            <p><span className="font-bold">Alerta de Stock Bajo:</span> Algunos productos tienen stock crítico (&lt;= {lowStockThreshold} unidades).</p>
         </div>
       }
        {filteredProducts.some(p => p.stock > lowStockThreshold && p.stock <= warningStockThreshold) && 
