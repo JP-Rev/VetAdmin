@@ -1,6 +1,5 @@
-
 import React, { useMemo } from 'react';
-import { useData } from '../contexts/DataContext';
+import { useSupabaseData } from '../contexts/SupabaseDataContext';
 import { TipoEventoHistorial, CategoriaGasto } from '../types';
 import { BarChart3, Activity, Stethoscope, ShoppingCart, TrendingUp, DollarSign, AlertTriangle } from 'lucide-react';
 
@@ -17,7 +16,7 @@ const StatDisplayCard: React.FC<{ title: string; children: React.ReactNode; icon
 );
 
 export const StatisticsPage: React.FC = () => {
-  const { medicalHistory, petSurgeries, surgeries, ventas, products, expenses } = useData(); // Renamed orders to ventas
+  const { medicalHistory, petSurgeries, surgeries, ventas, products, expenses } = useSupabaseData(); // Changed from useData to useSupabaseData
 
   const surgeryStats = useMemo(() => {
     const stats: Record<string, { count: number; totalRevenue: number; name: string }> = {};
