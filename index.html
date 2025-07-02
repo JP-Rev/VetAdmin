@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- PWA Basic Meta -->
+    <meta name="theme-color" content="#0d9488" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- PWA Icons -->
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" /> <!-- Keeping existing generic icon -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192x192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512x512.png" />
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VetAdmin App</title>
+    
+    <!-- Google Font Import -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            colors: {
+              primary: { // Turquoise
+                50: '#f0fdfa',
+                100: '#ccfbf1',
+                200: '#99f6e4',
+                300: '#5eead4',
+                400: '#2dd4bf',
+                500: '#14b8a6',
+                600: '#0d9488', // Main primary
+                700: '#0f766e',
+                800: '#115e59',
+                900: '#134e4a',
+                950: '#062f2b',
+              },
+              secondary: { // Neutral Gray/Blue
+                50: '#f8fafc', // slate-50
+                100: '#f1f5f9', // slate-100
+                200: '#e2e8f0', // slate-200
+                300: '#cbd5e1', // slate-300
+                400: '#94a3b8', // slate-400
+                500: '#64748b', // slate-500
+                600: '#475569', // slate-600
+                700: '#334155', // slate-700
+                800: '#1e293b', // slate-800
+                900: '#0f172a', // slate-900
+                950: '#020617', // slate-950
+              },
+              accent: { // Yellow/Amber
+                50: '#fffbeb',
+                100: '#fef3c7',
+                200: '#fde68a',
+                300: '#fcd34d',
+                400: '#fbbf24',
+                500: '#f59e0b', // amber-500
+                600: '#d97706', // amber-600
+                700: '#b45309',
+                800: '#92400e',
+                900: '#78350f',
+                950: '#451a03',
+              },
+              error: { // Red
+                50: '#fef2f2',
+                100: '#fee2e2',
+                200: '#fecaca',
+                300: '#fca5a5',
+                400: '#f87171',
+                500: '#ef4444', // red-500
+                600: '#dc2626', // red-600
+                700: '#b91c1c',
+                800: '#991b1b',
+                900: '#7f1d1d',
+                950: '#450a0a',
+              },
+              success: { // Green
+                50: '#f0fdf4',
+                100: '#dcfce7',
+                200: '#bbf7d0',
+                300: '#86efac',
+                400: '#4ade80',
+                500: '#22c55e', // green-500
+                600: '#16a34a', // green-600
+                700: '#15803d',
+                800: '#166534',
+                900: '#14532d',
+                950: '#052e16',
+              },
+              warning: { // Orange for warnings (like low stock, distinct from error red)
+                50: '#fff7ed',
+                100: '#ffedd5',
+                200: '#fed7aa',
+                300: '#fdba74',
+                400: '#fb923c',
+                500: '#f97316', // orange-500
+                600: '#ea580c', // orange-600
+                700: '#c2410c',
+                800: '#9a3412',
+                900: '#7c2d12',
+                950: '#431407',
+              }
+            }
+          }
+        }
+      }
+    </script>
+    
+    <style>
+      body {
+        font-family: 'Inter', sans-serif;
+      }
+      /* Custom scrollbar for webkit browsers */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #f1f1f1; /* Light gray track */
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #0d9488; /* Primary color thumb */
+        border-radius: 10px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #0f766e; /* Darker primary on hover */
+      }
+      /* For Firefox */
+      * {
+        scrollbar-width: thin;
+        scrollbar-color: #0d9488 #f1f1f1; /* thumb track */
+      }
+
+      /* Print specific styles for PDF generation and browser print */
+      #print-root { 
+        display: none; /* Hidden by default */
+      }
+      
+      .printable-area {
+        width: 210mm; /* A4 width */
+        min-height: 297mm; /* A4 height */
+        margin: 0 auto; /* Center horizontally */
+        padding: 20mm; /* A4 margins */
+        font-size: 11pt;
+        line-height: 1.4;
+        color: #000 !important;
+        background-color: #fff !important;
+        box-sizing: border-box;
+        font-family: 'Inter', Arial, sans-serif;
+        position: relative;
+        left: 0; /* Reset any left positioning */
+        right: 0; /* Reset any right positioning */
+      }
+      .printable-area * {
+          color: #000 !important;
+          background-color: transparent !important;
+          box-shadow: none !important;
+      }
+      .printable-area .no-print {
+          display: none !important;
+      }
+      .printable-area h1 {
+        font-size: 18pt;
+        font-weight: bold;
+        margin-bottom: 8pt;
+        text-align: center;
+      }
+      .printable-area h2 {
+        font-size: 16pt;
+        font-weight: bold;
+        margin-bottom: 6pt;
+        text-align: center;
+      }
+      .printable-area h3 {
+        font-size: 14pt;
+        font-weight: bold;
+        margin-bottom: 4pt;
+        margin-top: 12pt;
+      }
+      .printable-area p {
+        margin-bottom: 4pt;
+      }
+      .printable-area section {
+        margin-bottom: 16pt;
+        padding: 8pt;
+        border: 1pt solid #ccc;
+        border-radius: 4pt;
+      }
+      .printable-area .event-item {
+        padding-bottom: 8pt;
+        margin-bottom: 8pt;
+        border-bottom: 1pt solid #ddd;
+      }
+      .printable-area .event-item:last-child {
+        border-bottom: none;
+      }
+      
+      /* Styles for when body.printing is active (used by html2canvas) */
+      body.printing #print-root {
+        display: block !important; /* Make it visible for html2canvas */
+        position: fixed !important; /* Position it off-screen */
+        left: 0 !important; /* Center it properly */
+        top: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        z-index: 9999 !important; /* Bring to front for capture */
+        background: white !important; /* Ensure canvas background is white */
+        overflow: visible !important;
+      }
+      body.printing #root {
+        display: none !important; /* Hide main app during capture */
+      }
+      body.printing .printable-area {
+        position: relative !important;
+        left: 0 !important;
+        top: 0 !important;
+        margin: 0 auto !important;
+        transform: none !important;
+      }
+
+      @media print {
+        body > #root {
+          display: none !important; 
+        }
+        #print-root {
+          display: block !important; 
+        }
+        .printable-area {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 20mm;
+            margin: 0 auto;
+            box-sizing: border-box;
+            position: relative;
+            left: 0;
+            right: 0;
+        }
+        .printable-area table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 0.5em;
+          margin-bottom: 0.5em;
+        }
+        .printable-area th, .printable-area td {
+          border: 1px solid #ccc; 
+          padding: 4px;
+          text-align: left;
+        }
+        .printable-area h1, .printable-area h2, .printable-area h3, .printable-area h4, .printable-area p {
+          margin-bottom: 0.3em;
+        }
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.1.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.1.0/",
+    "react/": "https://esm.sh/react@^19.1.0/",
+    "react-router-dom": "https://esm.sh/react-router-dom@^7.6.2",
+    "lucide-react": "https://esm.sh/lucide-react@^0.400.0",
+    "react-dom": "https://esm.sh/react-dom@^19.1.0",
+    "html2canvas": "https://esm.sh/html2canvas@^1.4.1",
+    "jspdf": "https://esm.sh/jspdf@^3.0.1"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-secondary-100 text-secondary-800"> <!-- Adjusted body bg and text for overall theme -->
+    <div id="print-root"></div>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
