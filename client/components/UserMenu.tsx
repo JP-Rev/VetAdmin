@@ -1,11 +1,17 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
-import { LogOut, User, ChevronDown, Moon, Sun } from 'lucide-react';
+import { useTheme, Theme } from '../contexts/ThemeContext';
+import { LogOut, User, ChevronDown, Moon, Sun, Zap } from 'lucide-react';
+
+const THEME_OPTIONS: { value: Theme; label: string; icon: React.ReactNode }[] = [
+  { value: 'light', label: 'Claro', icon: <Sun size={16} /> },
+  { value: 'dark', label: 'Oscuro', icon: <Moon size={16} /> },
+  { value: 'neon', label: 'Neón', icon: <Zap size={16} /> },
+];
 
 export const UserMenu: React.FC = () => {
   const { user, signOut } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
 
   const handleSignOut = async () => {
@@ -37,13 +43,27 @@ export const UserMenu: React.FC = () => {
               <p className="font-medium">Conectado como:</p>
               <p className="text-xs text-secondary-500 truncate">{user.email}</p>
             </div>
-            <button
-              onClick={toggleTheme}
-              className="flex items-center w-full px-4 py-2 text-sm text-secondary-700 hover:bg-secondary-100 transition-colors"
-            >
-              {theme === 'dark' ? <Sun size={16} className="mr-2" /> : <Moon size={16} className="mr-2" />}
-              {theme === 'dark' ? 'Modo Claro' : 'Modo Oscuro'}
-            </button>
+            <div className="px-4 py-2 border-b border-secondary-200">
+              <p className="text-xs font-medium text-secondary-500 mb-1.5">Tema</p>
+              <div className="flex gap-1">
+                {THEME_OPTIONS.map(option => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setTheme(option.value)}
+                    className={`flex-1 flex flex-col items-center gap-0.5 py-1.5 rounded text-xs transition-colors ${
+                      theme === option.value
+                        ? 'bg-primary-600 text-white'
+                        : 'text-secondary-600 hover:bg-secondary-100'
+                    }`}
+                    aria-pressed={theme === option.value}
+                  >
+                    {option.icon}
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
             <button
               onClick={handleSignOut}
               className="flex items-center w-full px-4 py-2 text-sm text-secondary-700 hover:bg-secondary-100 transition-colors"

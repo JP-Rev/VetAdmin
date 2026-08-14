@@ -1,19 +1,23 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-type Theme = 'light' | 'dark';
+export type Theme = 'light' | 'dark' | 'neon';
 
 interface ThemeContextType {
   theme: Theme;
-  toggleTheme: () => void;
+  setTheme: (theme: Theme) => void;
 }
 
 const THEME_STORAGE_KEY = 'vetadmin_theme';
+const THEME_CLASSES: Theme[] = ['dark', 'neon'];
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+const isTheme = (value: string | null): value is Theme =>
+  value === 'light' || value === 'dark' || value === 'neon';
+
 const getInitialTheme = (): Theme => {
   const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
-  if (stored === 'light' || stored === 'dark') return stored;
+  if (isTheme(stored)) return stored;
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 };
 
@@ -21,14 +25,15 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [theme, setTheme] = useState<Theme>(getInitialTheme);
 
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', theme === 'dark');
+    THEME_CLASSES.forEach(cls => document.documentElement.classList.remove(cls));
+    if (theme !== 'light') {
+      document.documentElement.classList.add(theme);
+    }
     window.localStorage.setItem(THEME_STORAGE_KEY, theme);
   }, [theme]);
 
-  const toggleTheme = () => setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
-
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme }}>
       {children}
     </ThemeContext.Provider>
   );
