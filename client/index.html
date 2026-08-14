@@ -33,6 +33,13 @@
               // "surface" is the card/panel background (replaces bare bg-white),
               // themable via CSS vars so it flips with the .dark class.
               surface: 'rgb(var(--color-surface) / <alpha-value>)',
+              // "chrome" is the structural nav background (sidebar / header bar),
+              // separate from "primary" so buttons/links can stay vividly teal in
+              // both themes while the sidebar/header go near-black in dark mode.
+              chrome: {
+                DEFAULT: 'rgb(var(--color-chrome) / <alpha-value>)',
+                header: 'rgb(var(--color-chrome-header) / <alpha-value>)',
+              },
               primary: { // Turquoise. 50-200 are themable (used as soft badge/alert backgrounds).
                 50: 'rgb(var(--color-primary-50) / <alpha-value>)',
                 100: 'rgb(var(--color-primary-100) / <alpha-value>)',

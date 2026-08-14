@@ -92,7 +92,7 @@ const AppContent: React.FC = () => {
           <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
           
           <div className={`flex flex-col flex-1 transition-all duration-300 ease-in-out md:ml-64`}>
-            <header className="md:hidden sticky top-0 z-30 bg-primary-600 text-white p-3 shadow-md flex items-center justify-between">
+            <header className="md:hidden sticky top-0 z-30 bg-chrome-header text-white p-3 shadow-md flex items-center justify-between">
                <div className="flex items-center">
                  <button 
                   onClick={toggleSidebar} 
@@ -109,7 +109,7 @@ const AppContent: React.FC = () => {
             </header>
 
             {/* Desktop header with user menu */}
-            <header className="hidden md:block sticky top-0 z-30 bg-primary-600 text-white px-6 py-3 shadow-md">
+            <header className="hidden md:block sticky top-0 z-30 bg-chrome-header text-white px-6 py-3 shadow-md">
               <div className="flex justify-between items-center">
                 <h1 className="text-lg font-bold">{APP_TITLE}</h1>
                 <UserMenu />

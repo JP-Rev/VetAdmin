@@ -50,7 +50,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
   return (
     <aside 
       id="sidebar"
-      className={`fixed inset-y-0 left-0 z-40 w-64 bg-primary-800 text-white p-4 
+      className={`fixed inset-y-0 left-0 z-40 w-64 bg-chrome text-white p-4
                  transform transition-transform duration-300 ease-in-out 
                  md:translate-x-0 md:shadow-lg
                  ${isOpen ? 'translate-x-0 shadow-xl' : '-translate-x-full'}`}
