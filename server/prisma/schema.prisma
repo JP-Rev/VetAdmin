@@ -1,0 +1,251 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+
+model Cliente {
+  id        String    @id @default(cuid())
+  nombre    String
+  telefono  String
+  email     String?
+  domicilio String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  mascotas Mascota[]
+  turnos   Turno[]
+  ventas   Venta[]
+}
+
+model Raza {
+  id        String   @id @default(cuid())
+  nombre    String
+  especie   String
+  createdAt DateTime @default(now())
+
+  mascotas Mascota[]
+}
+
+model Mascota {
+  id              String   @id @default(cuid())
+  nombre          String
+  especie         String
+  razaId          String?
+  clienteId       String?
+  fechaNacimiento DateTime
+  sexo            String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  raza    Raza?    @relation(fields: [razaId], references: [id], onDelete: SetNull)
+  cliente Cliente? @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  turnos              Turno[]
+  ventas              Venta[]
+  historialMedico     HistorialMedico[]
+  mascotaEnfermedades MascotaEnfermedad[]
+  mascotaCirugias     MascotaCirugia[]
+
+  @@index([clienteId])
+  @@index([razaId])
+}
+
+model CategoriaProducto {
+  id          String   @id @default(cuid())
+  nombre      String   @unique
+  descripcion String?
+  activa      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  productos Producto[]
+
+  @@index([nombre])
+}
+
+model Producto {
+  id          String   @id @default(cuid())
+  nombre      String
+  stock       Int      @default(0)
+  precio      Float
+  categoria   String
+  categoriaId String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  categoriaRef   CategoriaProducto? @relation(fields: [categoriaId], references: [id], onDelete: SetNull)
+  ventaProductos VentaProducto[]
+
+  @@index([categoriaId])
+}
+
+model Enfermedad {
+  id              String   @id @default(cuid())
+  nombre          String
+  descripcion     String
+  especieAfectada String?
+  createdAt       DateTime @default(now())
+
+  mascotaEnfermedades MascotaEnfermedad[]
+}
+
+model Cirugia {
+  id                  String   @id @default(cuid())
+  tipo                String
+  descripcion         String
+  duracionEstimadaMin Int
+  costoEstimado       Float
+  createdAt           DateTime @default(now())
+
+  mascotaCirugias MascotaCirugia[]
+}
+
+model Turno {
+  id        String   @id @default(cuid())
+  fecha     DateTime
+  hora      String
+  clienteId String?
+  mascotaId String?
+  motivo    String
+  estado    String   @default("Pendiente")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cliente Cliente? @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  mascota Mascota? @relation(fields: [mascotaId], references: [id], onDelete: Cascade)
+
+  @@index([fecha])
+  @@index([clienteId])
+  @@index([mascotaId])
+}
+
+model Venta {
+  id        String   @id @default(cuid())
+  fecha     DateTime @default(now())
+  clienteId String?
+  mascotaId String?
+  total     Float
+  estado    String   @default("Pendiente")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cliente   Cliente?        @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  mascota   Mascota?        @relation(fields: [mascotaId], references: [id], onDelete: SetNull)
+  productos VentaProducto[]
+  pagos     Pago[]
+
+  @@index([clienteId])
+  @@index([fecha])
+}
+
+model VentaProducto {
+  id             String   @id @default(cuid())
+  ventaId        String
+  productoId     String
+  cantidad       Int
+  precioUnitario Float
+  createdAt      DateTime @default(now())
+
+  venta    Venta    @relation(fields: [ventaId], references: [id], onDelete: Cascade)
+  producto Producto @relation(fields: [productoId], references: [id], onDelete: Cascade)
+
+  @@index([ventaId])
+}
+
+model Pago {
+  id        String   @id @default(cuid())
+  ventaId   String
+  monto     Float
+  fecha     DateTime @default(now())
+  metodo    String
+  createdAt DateTime @default(now())
+
+  venta Venta @relation(fields: [ventaId], references: [id], onDelete: Cascade)
+
+  @@index([ventaId])
+}
+
+model HistorialMedico {
+  id           String   @id @default(cuid())
+  mascotaId    String
+  fecha        DateTime @default(now())
+  tipoEvento   String
+  descripcion  String
+  referenciaId String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  mascota     Mascota      @relation(fields: [mascotaId], references: [id], onDelete: Cascade)
+  attachments Attachment[]
+
+  @@index([mascotaId])
+  @@index([fecha])
+}
+
+model Attachment {
+  id           String   @id @default(cuid())
+  historialId  String
+  originalName String
+  mimeType     String
+  sizeBytes    Int
+  storedPath   String
+  createdAt    DateTime @default(now())
+
+  historial HistorialMedico @relation(fields: [historialId], references: [id], onDelete: Cascade)
+
+  @@index([historialId])
+}
+
+model MascotaEnfermedad {
+  id               String   @id @default(cuid())
+  mascotaId        String
+  enfermedadId     String
+  fechaDiagnostico DateTime
+  observaciones    String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  mascota    Mascota    @relation(fields: [mascotaId], references: [id], onDelete: Cascade)
+  enfermedad Enfermedad @relation(fields: [enfermedadId], references: [id], onDelete: Cascade)
+
+  @@index([mascotaId])
+}
+
+model MascotaCirugia {
+  id            String   @id @default(cuid())
+  mascotaId     String
+  cirugiaId     String
+  fecha         DateTime
+  observaciones String?
+  costoFinal    Float?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  mascota Mascota @relation(fields: [mascotaId], references: [id], onDelete: Cascade)
+  cirugia Cirugia @relation(fields: [cirugiaId], references: [id], onDelete: Cascade)
+
+  @@index([mascotaId])
+}
+
+model Gasto {
+  id          String   @id @default(cuid())
+  fecha       DateTime
+  descripcion String
+  monto       Float
+  categoria   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([fecha])
+}

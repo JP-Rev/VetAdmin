@@ -1,0 +1,37 @@
+services:
+  server:
+    build:
+      context: ./server
+    container_name: vetadmin_server
+    restart: unless-stopped
+    env_file:
+      - ./server/.env
+    environment:
+      DATABASE_URL: file:/data/vetadmin.db
+      STORAGE_ROOT: /srv/storage/vetadmin
+    volumes:
+      - ${STORAGE_ROOT_HOST:-../storage/vet-admin}:/srv/storage/vetadmin
+      - sqlite_data:/data
+    ports:
+      - "${SERVER_PORT:-4010}:4000"
+    networks:
+      - vetadmin_net
+
+  client:
+    build:
+      context: ./client
+    container_name: vetadmin_client
+    restart: unless-stopped
+    depends_on:
+      - server
+    ports:
+      - "${CLIENT_PORT:-3008}:80"
+    networks:
+      - vetadmin_net
+
+volumes:
+  sqlite_data:
+
+networks:
+  vetadmin_net:
+    driver: bridge
