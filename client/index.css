@@ -141,7 +141,9 @@
 
 /* Glow accents: hook into Tailwind's own shadow utility classes so every existing
    card (they all already carry a shadow-* class) gets a neon border/glow without
-   editing each component. */
+   editing each component. Default is cyan; .neon-cyan/.neon-magenta markers on a
+   descendant (see DashboardPage's StatCard colorClasses) recolor specific cards
+   via :has(), so e.g. Clientes/Mascotas glow cyan and Turnos/Ventas glow magenta. */
 .neon .shadow,
 .neon .shadow-sm,
 .neon .shadow-md,
@@ -151,7 +153,35 @@
   box-shadow: 0 0 0 1px rgb(45 212 191 / 0.35), 0 0 18px 0 rgb(45 212 191 / 0.25) !important;
 }
 
+.neon .shadow-lg:has(.neon-magenta) {
+  box-shadow: 0 0 0 1px rgb(236 72 153 / 0.4), 0 0 20px 0 rgb(236 72 153 / 0.3) !important;
+}
+
+.neon .shadow-lg:has(.neon-cyan) a,
+.neon .shadow-lg:has(.neon-cyan) svg {
+  color: rgb(45 212 191) !important;
+}
+
+.neon .shadow-lg:has(.neon-magenta) a,
+.neon .shadow-lg:has(.neon-magenta) svg {
+  color: rgb(236 72 153) !important;
+}
+
 .neon header {
   border-bottom: 1px solid rgb(236 72 153 / 0.6);
   box-shadow: 0 1px 14px 0 rgb(236 72 153 / 0.55);
+}
+
+.neon .app-logo {
+  color: rgb(45 212 191) !important;
+  text-shadow: 0 0 10px rgb(45 212 191 / 0.8);
+}
+
+.neon .user-avatar {
+  background: rgb(236 72 153 / 0.25) !important;
+  box-shadow: 0 0 10px rgb(236 72 153 / 0.6);
+}
+
+.neon .user-email {
+  color: rgb(236 72 153);
 }

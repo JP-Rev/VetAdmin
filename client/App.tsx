@@ -103,7 +103,7 @@ const AppContent: React.FC = () => {
                 >
                   <IconMenu className="h-6 w-6" />
                 </button>
-                <NavLink to="/" className="text-lg font-bold">{APP_TITLE}</NavLink>
+                <NavLink to="/" className="app-logo text-lg font-bold">{APP_TITLE}</NavLink>
                </div>
                <UserMenu />
             </header>
@@ -111,7 +111,7 @@ const AppContent: React.FC = () => {
             {/* Desktop header with user menu */}
             <header className="hidden md:block sticky top-0 z-30 bg-chrome-header text-white px-6 py-3 shadow-md">
               <div className="flex justify-between items-center">
-                <h1 className="text-lg font-bold">{APP_TITLE}</h1>
+                <h1 className="app-logo text-lg font-bold">{APP_TITLE}</h1>
                 <UserMenu />
               </div>
             </header>

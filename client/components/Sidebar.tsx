@@ -57,7 +57,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
       aria-label="Main navigation"
     >
       <div className="flex justify-between items-center mb-8">
-        <NavLink to="/" className="text-xl font-bold text-white hover:text-primary-200 transition-colors" onClick={handleMobileLinkClick}>
+        <NavLink to="/" className="app-logo text-xl font-bold text-white hover:text-primary-200 transition-colors" onClick={handleMobileLinkClick}>
           {APP_TITLE}
         </NavLink>
         <button 
