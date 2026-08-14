@@ -27,8 +27,8 @@ export const UserMenu: React.FC = () => {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center space-x-2 text-white hover:text-primary-200 transition-colors p-2 rounded-md hover:bg-primary-700"
       >
-        <span className="user-avatar flex items-center justify-center h-8 w-8 rounded-full bg-primary-700">
-          <User size={16} />
+        <span className="user-avatar flex items-center justify-center h-8 w-8 rounded-full">
+          <User size={20} />
         </span>
         <span className="user-email hidden sm:block text-sm">{user.email}</span>
         <ChevronDown size={16} className={`transform transition-transform ${isOpen ? 'rotate-180' : ''}`} />
