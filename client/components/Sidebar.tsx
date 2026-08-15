@@ -24,7 +24,7 @@ const NavItem: React.FC<NavItemProps> = ({ to, children, icon, onClick }) => {
         `flex items-center px-3 py-2.5 rounded-md text-sm font-medium transition-colors duration-150 group ${
           isActive 
             ? 'bg-primary-700 text-white shadow-inner' 
-            : 'text-primary-100 hover:bg-primary-700 hover:text-white'
+            : 'text-slate-300 hover:bg-primary-700 hover:text-white'
         }`
       }
       aria-current={isActive ? 'page' : undefined}
@@ -57,12 +57,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
       aria-label="Main navigation"
     >
       <div className="flex justify-between items-center mb-8">
-        <NavLink to="/" className="app-logo text-xl font-bold text-white hover:text-primary-200 transition-colors" onClick={handleMobileLinkClick}>
+        <NavLink to="/" className="app-logo text-xl font-bold text-white hover:text-slate-200 transition-colors" onClick={handleMobileLinkClick}>
           {APP_TITLE}
         </NavLink>
         <button 
           onClick={toggleSidebar} 
-          className="md:hidden p-1 rounded-md text-primary-200 hover:bg-primary-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+          className="md:hidden p-1 rounded-md text-slate-300 hover:bg-primary-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
           aria-label="Cerrar menú"
           aria-controls="sidebar"
           aria-expanded={isOpen}

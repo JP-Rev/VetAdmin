@@ -25,7 +25,7 @@ export const UserMenu: React.FC = () => {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-2 text-white hover:text-primary-200 transition-colors p-2 rounded-md hover:bg-primary-700"
+        className="flex items-center space-x-2 text-white transition-colors p-2 rounded-md hover:bg-primary-700"
       >
         <span className="user-avatar flex items-center justify-center h-8 w-8 rounded-full">
           <User size={20} />
