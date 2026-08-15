@@ -77,10 +77,10 @@ export const DashboardPage: React.FC = () => {
       <h1 className="text-3xl font-bold text-secondary-800">Dashboard Veterinario</h1>
       
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Clientes Activos" value={clients.length} icon={<Users className="h-6 w-6"/>} linkTo="/clients" colorClasses="bg-accent-100 text-accent-700 neon-cyan" />
-        <StatCard title="Mascotas Registradas" value={pets.length} icon={<PawPrint className="h-6 w-6"/>} linkTo="/pets" colorClasses="bg-success-100 text-success-700 neon-cyan" />
-        <StatCard title="Turnos Próximos" value={getUpcomingAppointments().length} icon={<CalendarDays className="h-6 w-6"/>} linkTo="/appointments" colorClasses="bg-warning-100 text-warning-700 neon-magenta" />
-        <StatCard title="Ventas Pendientes" value={ventas.filter(v => v.estado === EstadoVenta.PENDIENTE).length} icon={<ShoppingCart className="h-6 w-6"/>} linkTo="/ventas" colorClasses="bg-error-100 text-error-700 neon-magenta" />
+        <StatCard title="Clientes Activos" value={clients.length} icon={<Users className="h-6 w-6"/>} linkTo="/clients" colorClasses="bg-accent-100 text-accent-700 neon-cyan stat-icon" />
+        <StatCard title="Mascotas Registradas" value={pets.length} icon={<PawPrint className="h-6 w-6"/>} linkTo="/pets" colorClasses="bg-success-100 text-success-700 neon-cyan stat-icon" />
+        <StatCard title="Turnos Próximos" value={getUpcomingAppointments().length} icon={<CalendarDays className="h-6 w-6"/>} linkTo="/appointments" colorClasses="bg-warning-100 text-warning-700 neon-magenta stat-icon" />
+        <StatCard title="Ventas Pendientes" value={ventas.filter(v => v.estado === EstadoVenta.PENDIENTE).length} icon={<ShoppingCart className="h-6 w-6"/>} linkTo="/ventas" colorClasses="bg-error-100 text-error-700 neon-magenta stat-icon" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

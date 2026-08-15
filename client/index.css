@@ -44,8 +44,8 @@
 
 .dark {
   --color-surface: 30 41 59; /* slate-800: lifted card surface above the page background */
-  --color-chrome: 17 94 89; /* same as the light-mode sidebar: unchanged in dark mode */
-  --color-chrome-header: 13 148 136; /* same as the light-mode header: unchanged in dark mode */
+  --color-chrome: 15 23 42; /* near-black, same as the page background: sidebar blends in */
+  --color-chrome-header: 15 23 42; /* near-black, same as the sidebar: header blends in too */
 
   /* Soft brand tints become deep, near-black shades of the same hue so that the
      literal (unthemed) mid/dark shades used for text and borders keep contrast. */
@@ -90,6 +90,14 @@
 
 .dark * {
   scrollbar-color: #0d9488 #1e293b;
+}
+
+/* Dashboard stat-card icon badges: flat neutral gray in dark mode instead of
+   the accent/success/warning/error tint used in light mode, for a monochrome
+   look (see the .stat-icon marker on DashboardPage's StatCard colorClasses). */
+.dark .stat-icon {
+  background-color: rgb(51 65 85) !important;
+  color: rgb(148 163 184) !important;
 }
 
 .neon {
