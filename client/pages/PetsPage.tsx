@@ -4,8 +4,11 @@ import { useSupabaseData } from '../contexts/SupabaseDataContext';
 import { Mascota } from '../types';
 import { Modal } from '../components/Modal';
 import { Button } from '../components/common/Button';
-import { FormField } from '../components/common/FormField';
-import { Edit3, FileText, PawPrint, Users, Plus, Search, ShoppingCart } from 'lucide-react';
+import { FileText, PawPrint, Users, Plus, Search, ShoppingCart } from 'lucide-react';
+import { SpeciesIcon } from '../lib/speciesIcon';
+import {
+  FilterCard, DataCard, TableWrap, Th, Td, Tr, RowActions, IconAction, EditIcon, EmptyState,
+} from '../components/common/ListLayout';
 import { PetFormComponent } from './ClientsPage'; // Re-using PetFormComponent from ClientsPage
 
 
@@ -80,25 +83,19 @@ export const PetsPage: React.FC = () => {
   }, [clients, clientSearchTerm]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-3xl font-bold text-secondary-800">Listado General de Mascotas</h1>
-        <Button onClick={() => handleOpenPetModal()} leftIcon={<Plus />}>
-          Nueva Mascota
-        </Button>
+    <div className="flex flex-col gap-5">
+      <div>
+        <h1 className="m-0 text-[26px] font-extrabold tracking-[-0.6px] text-secondary-900">Mascotas</h1>
+        <p className="mt-1 mb-0 text-sm text-secondary-600">Fichas de todas las mascotas registradas.</p>
       </div>
 
-      <div className="bg-surface p-4 shadow rounded-lg">
-        <FormField
-          label=""
-          name="searchPets"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Buscar mascotas por nombre, especie, raza o propietario..."
-          inputClassName="text-sm"
-          className="mb-0"
-        />
-      </div>
+      <FilterCard
+        title="Filtros de mascotas"
+        subtitle="Buscar por nombre, especie, raza o propietario"
+        value={searchTerm}
+        onChange={setSearchTerm}
+        placeholder="Buscar mascota…"
+      />
 
       {isPetModalOpen && (
         <Modal 
@@ -229,87 +226,83 @@ export const PetsPage: React.FC = () => {
         </Modal>
       )}
 
-      <div className="bg-surface shadow-lg rounded-lg overflow-x-auto">
-        <table className="min-w-full divide-y divide-secondary-200">
-          <thead className="bg-secondary-50">
-            <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Nombre Mascota</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Especie</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Raza</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Propietario</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Acciones</th>
-            </tr>
-          </thead>
-          <tbody className="bg-surface divide-y divide-secondary-200">
-            {filteredPets.length > 0 ? filteredPets.map(pet => {
-              const petHistoryCount = getMedicalHistoryByPetId(pet.id_mascota).length;
-              return (
-                <tr key={pet.id_mascota} className="hover:bg-secondary-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-primary-700">{pet.nombre}</div>
-                    <div className="text-xs text-secondary-500">ID: {pet.id_mascota.substring(0,8)}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-700">{pet.especie}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-700">{pet.breedName}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-700">
-                    {pet.ownerId ? (
-                       <Link to={`/clients/${pet.ownerId}`} className="hover:underline text-primary-600">
-                         {pet.ownerName}
-                       </Link>
-                    ) : (
-                        <span>{pet.ownerName}</span>
-                    )}                   
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex items-center space-x-1">
-                      <Button 
-                        size="sm" 
-                        variant="ghost" 
-                        onClick={() => handleOpenPetModal(pet)} 
-                        title="Editar Mascota" 
-                        className="text-accent-600 hover:bg-accent-50 p-1.5"
-                      >
-                        <Edit3 className="h-4 w-4" />
-                      </Button>
-                      <Link to={`/pets/${pet.id_mascota}/history`} title="Ver Historial Médico">
-                        <Button size="sm" variant="ghost" className="p-1.5 text-blue-600 hover:bg-blue-50">
-                          <FileText className="h-4 w-4"/>
-                           <span className="ml-1 text-xs">({petHistoryCount})</span>
-                        </Button>
-                      </Link>
-                      <Button 
-                        size="sm" 
-                        variant="ghost" 
-                        onClick={() => handleCreateSaleForPet(pet)} 
-                        title="Crear Venta para esta Mascota" 
-                        className="text-success-600 hover:bg-success-50 p-1.5"
-                      >
-                        <ShoppingCart className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            }) : (
+      <DataCard
+        title="Mascotas"
+        count={filteredPets.length}
+        filtered={searchTerm.trim().length > 0}
+        actionLabel="Nueva"
+        onAction={() => handleOpenPetModal()}
+      >
+        {filteredPets.length > 0 ? (
+          <TableWrap>
+            <thead>
               <tr>
-                <td colSpan={5} className="px-6 py-10 text-center text-secondary-500">
-                  <PawPrint className="mx-auto h-10 w-10 text-secondary-400 mb-2" />
-                  {searchTerm ? "No hay mascotas que coincidan con la búsqueda." : "No hay mascotas registradas."}
-                </td>
+                <Th>Mascota</Th>
+                <Th>Especie</Th>
+                <Th>Raza</Th>
+                <Th>Propietario</Th>
+                <Th className="text-right">Acciones</Th>
               </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-       {filteredPets.length === 0 && !searchTerm && pets.length === 0 && (
-         <div className="text-center py-10 bg-surface rounded-lg shadow mt-4">
-            <PawPrint className="mx-auto h-12 w-12 text-secondary-400" />
-            <h3 className="mt-2 text-sm font-medium text-secondary-900">¡Agregue su primera mascota!</h3>
-            <p className="mt-1 text-sm text-secondary-500">
-                Use el botón "Nueva Mascota" para comenzar a registrar mascotas en el sistema.
-            </p>
-          </div>
-       )}
+            </thead>
+            <tbody>
+              {filteredPets.map(pet => {
+                const historyCount = getMedicalHistoryByPetId(pet.id_mascota).length;
+                return (
+                  <Tr key={pet.id_mascota}>
+                    <Td>
+                      <span className="flex items-center gap-2.5">
+                        <span className="w-8 h-8 rounded-lg bg-secondary-100 text-secondary-600 flex items-center justify-center flex-shrink-0">
+                          <SpeciesIcon especie={pet.especie} size={16} />
+                        </span>
+                        <span className="font-semibold text-secondary-900">{pet.nombre}</span>
+                      </span>
+                    </Td>
+                    <Td className="text-secondary-600">{pet.especie}</Td>
+                    <Td className="text-secondary-600">{pet.breedName}</Td>
+                    <Td>
+                      {pet.ownerId ? (
+                        <Link to={`/clients/${pet.ownerId}`} className="text-primary-700 hover:underline font-medium">
+                          {pet.ownerName}
+                        </Link>
+                      ) : (
+                        <span className="text-secondary-500">{pet.ownerName}</span>
+                      )}
+                    </Td>
+                    <Td>
+                      <RowActions>
+                        <Link to={`/pets/${pet.id_mascota}/history`} title={`Historial médico (${historyCount})`}>
+                          <span className="relative w-[34px] h-[34px] rounded-[9px] border border-secondary-200 text-secondary-600
+                                           hover:bg-secondary-100 hover:text-secondary-900 flex items-center justify-center transition-colors">
+                            <FileText size={15} />
+                            {historyCount > 0 && (
+                              <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-primary-700 text-white
+                                               font-mono text-[9px] font-bold flex items-center justify-center">
+                                {historyCount}
+                              </span>
+                            )}
+                          </span>
+                        </Link>
+                        <IconAction label="Crear venta para esta mascota" onClick={() => handleCreateSaleForPet(pet)}>
+                          <ShoppingCart size={15} />
+                        </IconAction>
+                        <IconAction label="Editar mascota" onClick={() => handleOpenPetModal(pet)}>
+                          <EditIcon />
+                        </IconAction>
+                      </RowActions>
+                    </Td>
+                  </Tr>
+                );
+              })}
+            </tbody>
+          </TableWrap>
+        ) : (
+          <EmptyState
+            icon={<PawPrint size={24} />}
+            title={searchTerm ? 'Sin resultados' : 'No hay mascotas'}
+            hint={searchTerm ? 'Probá con otros términos de búsqueda.' : 'Agregá la primera mascota con el botón Nueva.'}
+          />
+        )}
+      </DataCard>
     </div>
   );
 };

@@ -6,7 +6,10 @@ import { Modal } from '../components/Modal';
 import { Button } from '../components/common/Button';
 import { FormField } from '../components/common/FormField';
 import { PrintableReceipt } from '../components/PrintableReceipt';
-import { Plus, ShoppingCart, Trash2, ChevronDown, DollarSign, CreditCard, Printer, Calendar, TrendingUp, TrendingDown, BarChart3 } from 'lucide-react';
+import { Plus, ShoppingCart, Trash2, ChevronDown, DollarSign, CreditCard, Printer, TrendingUp, TrendingDown, BarChart3, XCircle, RotateCcw } from 'lucide-react';
+import {
+  DataCard, TableWrap, Th, Td, Tr, RowActions, IconAction, EmptyState,
+} from '../components/common/ListLayout';
 
 // Venta Form Component
 interface VentaFormProps {
@@ -427,20 +430,6 @@ export const Ventas: React.FC = () => {
     return getDailyCashFlowReport(selectedDate);
   }, [getDailyCashFlowReport, selectedDate]);
 
-  const sortedVentas = [...ventas].sort((a,b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()); 
-  
-  const animationStyle = {
-    maxHeight: '1000px',
-    overflow: 'hidden',
-    transition: 'max-height 0.5s ease-in-out, padding-top 0.5s ease-in-out, padding-bottom 0.5s ease-in-out, opacity 0.5s ease-in-out',
-  };
-  const collapsedStyle = {
-    maxHeight: '0',
-    paddingTop: '0',
-    paddingBottom: '0',
-    opacity: 0,
-  };
-
   const formatDateForDisplay = (dateString: string) => {
     const date = new Date(dateString + 'T00:00:00');
     return date.toLocaleDateString('es-ES', {
@@ -451,12 +440,10 @@ export const Ventas: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-3xl font-bold text-secondary-800">Gestión de Ventas</h1> 
-        <Button onClick={handleOpenVentaModal} leftIcon={<Plus />}>
-          Nueva Venta 
-        </Button>
+    <div className="flex flex-col gap-5">
+      <div>
+        <h1 className="m-0 text-[26px] font-extrabold tracking-[-0.6px] text-secondary-900">Ventas</h1>
+        <p className="mt-1 mb-0 text-sm text-secondary-600">Facturación del día y cobros.</p>
       </div>
 
       {/* Date Filter and Daily Report */}
@@ -545,96 +532,162 @@ export const Ventas: React.FC = () => {
         </Modal>
       )}
 
-      <div className="space-y-4">
-        {filteredVentas.length > 0 ? filteredVentas.map(venta => { 
-          const client = getClientById(venta.cliente_id);
-          const pet = venta.mascota_id ? getPetById(venta.mascota_id) : undefined;
-          const isExpanded = expandedVentaId === venta.id_venta; 
-          const ventaPayments = getPaymentsByVentaId(venta.id_venta); 
-          const totalPaid = ventaPayments.reduce((sum, p) => sum + p.monto, 0);
-          
-          let statusColorClass = '';
-          switch (venta.estado) { 
-            case EstadoVenta.PAGADA: statusColorClass = 'bg-success-100 text-success-800'; break; 
-            case EstadoVenta.PENDIENTE: statusColorClass = 'bg-warning-100 text-warning-800'; break; 
-            case EstadoVenta.CANCELADA: statusColorClass = 'bg-error-100 text-error-800'; break; 
-          }
+      <DataCard
+        title="Ventas"
+        count={filteredVentas.length}
+        filtered
+        actionLabel="Nueva"
+        onAction={handleOpenVentaModal}
+      >
+        {filteredVentas.length > 0 ? (
+          <TableWrap>
+            <thead>
+              <tr>
+                <Th>Venta</Th>
+                <Th>Cliente</Th>
+                <Th>Hora</Th>
+                <Th>Total</Th>
+                <Th>Estado</Th>
+                <Th className="text-right">Acciones</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredVentas.map(venta => {
+                const client = getClientById(venta.cliente_id);
+                const pet = venta.mascota_id ? getPetById(venta.mascota_id) : undefined;
+                const isExpanded = expandedVentaId === venta.id_venta;
+                const ventaPayments = getPaymentsByVentaId(venta.id_venta);
+                const totalPaid = ventaPayments.reduce((sum, p) => sum + p.monto, 0);
+                const saldo = venta.total - totalPaid;
+                const badge: Record<string, string> = {
+                  [EstadoVenta.PAGADA]: 'bg-primary-50 text-primary-700',
+                  [EstadoVenta.PENDIENTE]: 'bg-warning-50 text-warning-700',
+                  [EstadoVenta.CANCELADA]: 'bg-error-50 text-error-600',
+                };
 
-          return (
-            <div key={venta.id_venta} className="bg-surface shadow-lg rounded-lg overflow-hidden"> 
-              <div className="p-4 sm:p-5 cursor-pointer hover:bg-secondary-50 transition-colors duration-150" onClick={() => toggleExpandVenta(venta.id_venta)}> 
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <h2 className="text-lg font-semibold text-primary-700">Venta #{venta.id_venta.substring(0,8)}</h2> 
-                    <p className="text-sm text-secondary-600">{client?.nombre} {pet ? `- ${pet.nombre}` : ''}</p>
-                    <p className="text-xs text-secondary-500">Fecha: {new Date(venta.fecha).toLocaleString()}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xl font-bold text-secondary-800">${venta.total.toFixed(2)}</p>
-                    <span className={`px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColorClass}`}>
-                      {venta.estado} 
-                    </span>
-                  </div>
-                  <ChevronDown className={`h-6 w-6 text-secondary-500 transform transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''} ml-auto sm:ml-2`} />
-                </div>
-              </div>
+                return (
+                  <React.Fragment key={venta.id_venta}>
+                    <Tr onClick={() => toggleExpandVenta(venta.id_venta)}>
+                      <Td>
+                        <span className="flex items-center gap-2">
+                          <ChevronDown
+                            size={15}
+                            className={`text-secondary-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                          />
+                          <span className="font-mono text-[12.5px] font-semibold text-secondary-900">
+                            #{venta.id_venta.slice(-6)}
+                          </span>
+                        </span>
+                      </Td>
+                      <Td>
+                        <span className="flex flex-col">
+                          <span className="text-secondary-900">{client?.nombre || '—'}</span>
+                          {pet && <span className="text-[11.5px] text-secondary-500">{pet.nombre}</span>}
+                        </span>
+                      </Td>
+                      <Td className="font-mono text-[12.5px] whitespace-nowrap">
+                        {new Date(venta.fecha).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
+                      </Td>
+                      <Td className="font-mono text-[12.5px] font-semibold">${venta.total.toFixed(2)}</Td>
+                      <Td>
+                        <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap ${badge[venta.estado] ?? ''}`}>
+                          {venta.estado}
+                        </span>
+                      </Td>
+                      <Td>
+                        <RowActions>
+                          {venta.estado === EstadoVenta.PENDIENTE && saldo > 0.001 && (
+                            <IconAction label="Registrar pago" onClick={() => handleOpenPaymentModal(venta)}>
+                              <CreditCard size={15} />
+                            </IconAction>
+                          )}
+                          <IconAction label="Imprimir ticket" onClick={() => handlePrintReceipt(venta)}>
+                            <Printer size={15} />
+                          </IconAction>
+                          {venta.estado === EstadoVenta.PENDIENTE && (
+                            <IconAction label="Cancelar venta" variant="danger" onClick={() => updateVentaStatus(venta.id_venta, EstadoVenta.CANCELADA)}>
+                              <XCircle size={15} />
+                            </IconAction>
+                          )}
+                          {venta.estado === EstadoVenta.CANCELADA && (
+                            <IconAction label="Reabrir venta" onClick={() => updateVentaStatus(venta.id_venta, EstadoVenta.PENDIENTE)}>
+                              <RotateCcw size={15} />
+                            </IconAction>
+                          )}
+                        </RowActions>
+                      </Td>
+                    </Tr>
 
-              <div style={isExpanded ? animationStyle : { ...animationStyle, ...collapsedStyle }}>
-                <div className="border-t border-secondary-200 p-4 sm:p-5 bg-secondary-50 space-y-3">
-                  <h4 className="font-medium text-secondary-700">Productos:</h4>
-                  <ul className="list-disc list-inside pl-2 text-sm text-secondary-600 max-h-40 overflow-y-auto">
-                    {venta.productos.map(item => { 
-                      const productDetails = products.find(p => p.id_producto === item.producto_id);
-                      return (
-                        <li key={item.producto_id}>
-                          {productDetails?.nombre || 'Producto Desconocido'} (x{item.cantidad}) - ${ (item.precio_unitario * item.cantidad).toFixed(2)}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                  <h4 className="font-medium text-secondary-700 mt-2">Pagos:</h4>
-                   {ventaPayments.length > 0 ? ( 
-                        <ul className="list-disc list-inside pl-2 text-sm text-secondary-600">
-                            {ventaPayments.map(p => ( 
-                                <li key={p.id_pago}>${p.monto.toFixed(2)} ({p.metodo}) - {new Date(p.fecha).toLocaleDateString()}</li>
-                            ))}
-                        </ul>
-                   ) : <p className="text-sm text-secondary-500">No hay pagos registrados.</p>}
-                   <p className="text-sm font-semibold text-secondary-800">Total Pagado: ${totalPaid.toFixed(2)}</p>
-                   {venta.total - totalPaid > 0.001 && <p className="text-sm text-error-600 font-semibold">Saldo Pendiente: ${(venta.total - totalPaid).toFixed(2)}</p>} 
+                    {isExpanded && (
+                      <tr className="border-b border-secondary-100">
+                        <td colSpan={6} className="px-5 py-4 bg-secondary-50">
+                          <div className="grid gap-5 sm:grid-cols-2">
+                            <div>
+                              <p className="m-0 mb-2 font-mono text-[9.5px] tracking-[0.16em] uppercase text-secondary-500">Productos</p>
+                              <ul className="m-0 p-0 list-none flex flex-col gap-1.5">
+                                {venta.productos.map(item => {
+                                  const prod = products.find(p => p.id_producto === item.producto_id);
+                                  return (
+                                    <li key={item.producto_id} className="flex items-baseline justify-between gap-3 text-[12.5px]">
+                                      <span className="text-secondary-700 truncate">
+                                        {prod?.nombre || 'Producto desconocido'} <span className="text-secondary-500">×{item.cantidad}</span>
+                                      </span>
+                                      <span className="font-mono text-secondary-900 flex-shrink-0">
+                                        ${(item.precio_unitario * item.cantidad).toFixed(2)}
+                                      </span>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            </div>
 
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    {venta.estado === EstadoVenta.PENDIENTE && (venta.total - totalPaid > 0.001) && ( 
-                      <Button size="sm" variant="primary" onClick={() => handleOpenPaymentModal(venta)} leftIcon={<CreditCard />}>Registrar Pago</Button> 
+                            <div>
+                              <p className="m-0 mb-2 font-mono text-[9.5px] tracking-[0.16em] uppercase text-secondary-500">Pagos</p>
+                              {ventaPayments.length > 0 ? (
+                                <ul className="m-0 p-0 list-none flex flex-col gap-1.5">
+                                  {ventaPayments.map(pago => (
+                                    <li key={pago.id_pago} className="flex items-baseline justify-between gap-3 text-[12.5px]">
+                                      <span className="text-secondary-700">
+                                        {pago.metodo} · {new Date(pago.fecha).toLocaleDateString('es-AR')}
+                                      </span>
+                                      <span className="font-mono text-secondary-900 flex-shrink-0">${pago.monto.toFixed(2)}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              ) : (
+                                <p className="m-0 text-[12.5px] text-secondary-500">Sin pagos registrados.</p>
+                              )}
+
+                              <div className="mt-3 pt-3 border-t border-secondary-200 flex flex-col gap-1">
+                                <span className="flex items-baseline justify-between text-[12.5px]">
+                                  <span className="text-secondary-600">Total pagado</span>
+                                  <strong className="font-mono text-secondary-900">${totalPaid.toFixed(2)}</strong>
+                                </span>
+                                {saldo > 0.001 && (
+                                  <span className="flex items-baseline justify-between text-[12.5px]">
+                                    <span className="text-error-600">Saldo pendiente</span>
+                                    <strong className="font-mono text-error-600">${saldo.toFixed(2)}</strong>
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
                     )}
-                    {venta.estado === EstadoVenta.PENDIENTE && ( 
-                      <Button size="sm" variant="danger" onClick={() => updateVentaStatus(venta.id_venta, EstadoVenta.CANCELADA)}>Cancelar Venta</Button> 
-                    )}
-                     {venta.estado === EstadoVenta.CANCELADA && ( 
-                      <Button size="sm" variant="secondary" onClick={() => updateVentaStatus(venta.id_venta, EstadoVenta.PENDIENTE)}>Reabrir Venta</Button> 
-                    )}
-                    <Button size="sm" variant="outline" onClick={() => handlePrintReceipt(venta)} leftIcon={<Printer />}>Imprimir Ticket</Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )
-        }) : (
-          <div className="text-center py-10 bg-surface rounded-lg shadow">
-            <ShoppingCart className="mx-auto h-12 w-12 text-secondary-400" />
-            <h3 className="mt-2 text-sm font-medium text-secondary-900">
-              {selectedDate === new Date().toISOString().split('T')[0] 
-                ? "No hay ventas hoy" 
-                : `No hay ventas para ${formatDateForDisplay(selectedDate)}`}
-            </h3>
-            <p className="mt-1 text-sm text-secondary-500">
-              {selectedDate === new Date().toISOString().split('T')[0] 
-                ? "Comience por crear una nueva venta." 
-                : "Seleccione otra fecha o cree una nueva venta."}
-            </p>
-          </div>
+                  </React.Fragment>
+                );
+              })}
+            </tbody>
+          </TableWrap>
+        ) : (
+          <EmptyState
+            icon={<ShoppingCart size={24} />}
+            title={`No hay ventas para ${formatDateForDisplay(selectedDate)}`}
+            hint="Cambiá la fecha o registrá una venta nueva."
+          />
         )}
-      </div>
+      </DataCard>
     </div>
   );
 };

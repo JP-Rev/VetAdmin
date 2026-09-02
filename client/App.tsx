@@ -7,7 +7,6 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { SupabaseDataProvider, useSupabaseData } from './contexts/SupabaseDataContext';
 import { Sidebar } from './components/Sidebar';
 import { AppHeader } from './components/AppHeader';
-import { FrodosoftLogo } from './components/FrodosoftLogo';
 import { DashboardPage } from './pages/DashboardPage';
 import { ClientsPage } from './pages/ClientsPage';
 import { PetsPage } from './pages/PetsPage'; 
@@ -118,18 +117,7 @@ const AppContent: React.FC = () => {
               </Routes>
             </main>
 
-            <footer className="py-5 px-8 flex items-center justify-center gap-2 text-xs text-secondary-500">
-              <span>Desarrollado por</span>
-              <a
-                href="https://frodosoft.com.ar"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 font-semibold text-secondary-600 hover:text-primary-700 transition-colors"
-              >
-                <FrodosoftLogo />
-                Frodosoft
-              </a>
-            </footer>
+            {/* La atribución a Frodosoft vive en el pie del sidebar, visible en toda la app. */}
           </div>
 
           {isSidebarOpen && (

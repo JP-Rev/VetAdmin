@@ -4,8 +4,9 @@ import { useSupabaseData } from '../contexts/SupabaseDataContext';
 import { EstadoTurno } from '../types';
 import {
   LayoutDashboard, Users, CalendarDays, ShoppingCart, Package, X as IconClose,
-  PawPrint, BarChart3, Settings as IconSettings, CreditCard, ArrowRight,
+  PawPrint, BarChart3, Settings as IconSettings, CreditCard,
 } from 'lucide-react';
+import { FrodosoftLogo } from './FrodosoftLogo';
 
 interface NavItemProps {
   to: string;
@@ -120,18 +121,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
         </NavSection>
       </nav>
 
-      <div className="rounded-[14px] bg-white/[0.05] border border-white/[0.07] p-3.5">
-        <p className="m-0 mb-2 text-xs leading-[1.45] text-[#a8c6c2]">
-          La base se respalda con el volumen Docker del servidor.
-        </p>
-        <NavLink
-          to="/settings"
-          onClick={handleMobileLinkClick}
-          className="inline-flex items-center gap-1.5 text-xs font-bold text-[#5eead4] hover:text-[#2dd4bf] transition-colors"
-        >
-          Ver configuración <ArrowRight size={13} />
-        </NavLink>
-      </div>
+      <a
+        href="https://frodosoft.com.ar"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-2.5 rounded-[12px] px-3 py-2.5 text-[#a8c6c2]
+                   hover:bg-white/[0.06] hover:text-white transition-colors"
+      >
+        <FrodosoftLogo size={18} />
+        <span className="text-xs font-medium">Producto de Frodosoft</span>
+      </a>
     </aside>
   );
 };

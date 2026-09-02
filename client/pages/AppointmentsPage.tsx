@@ -7,7 +7,11 @@ import { Button } from '../components/common/Button';
 import { FormField } from '../components/common/FormField';
 import { ConsultationFormComponent } from '../components/forms/ConsultationFormComponent'; 
 import { AppointmentCalendarView } from '../components/AppointmentCalendarView';
-import { Plus, Edit3, Trash2, CalendarDays, CheckCircle, UserX, List, Eye } from 'lucide-react';
+import { CalendarDays, CheckCircle, UserX, List } from 'lucide-react';
+import { SpeciesIcon } from '../lib/speciesIcon';
+import {
+  Card, DataCard, TableWrap, Th, Td, Tr, RowActions, IconAction, EditIcon, DeleteIcon, ViewIcon, EmptyState,
+} from '../components/common/ListLayout';
 
 // Appointment Form Component
 interface AppointmentFormProps {
@@ -273,150 +277,165 @@ export const AppointmentsPage: React.FC = () => {
     {value: 'all', label: 'Todos'},
   ];
 
+  const hayFiltro = filter !== EstadoTurno.PENDIENTE || selectedDateFilter !== null;
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-3xl font-bold text-secondary-800">Gestión de Turnos</h1>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-            <div className="flex space-x-1">
-                <Button 
-                    variant={viewMode === 'list' ? 'primary' : 'outline'}
-                    onClick={() => setViewMode('list')} 
-                    size="sm" 
-                    leftIcon={<List size={16}/>}
-                    className={viewMode === 'list' ? '' : 'border-secondary-300 text-secondary-600 hover:bg-secondary-50'}
-                >
-                    Lista
-                </Button>
-                <Button 
-                    variant={viewMode === 'calendar' ? 'primary' : 'outline'}
-                    onClick={() => { setViewMode('calendar'); setSelectedDateFilter(null);}} 
-                    size="sm" 
-                    leftIcon={<CalendarDays size={16}/>}
-                    className={viewMode === 'calendar' ? '' : 'border-secondary-300 text-secondary-600 hover:bg-secondary-50'}
-                >
-                    Calendario
-                </Button>
-            </div>
-            <Button onClick={() => handleOpenAppointmentModal()} leftIcon={<Plus />} size="sm">
-            Nuevo Turno
-            </Button>
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="m-0 text-[26px] font-extrabold tracking-[-0.6px] text-secondary-900">Turnos</h1>
+          <p className="mt-1 mb-0 text-sm text-secondary-600">Agenda de la clínica.</p>
+        </div>
+        {/* Lista / Calendario: segmentado, para que se lea como dos vistas de lo mismo */}
+        <div className="flex bg-surface border border-secondary-200 rounded-[11px] p-1 gap-0.5">
+          <button
+            onClick={() => setViewMode('list')}
+            aria-pressed={viewMode === 'list'}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-[12.5px] font-semibold transition-colors ${
+              viewMode === 'list' ? 'bg-primary-50 text-primary-700' : 'text-secondary-600 hover:bg-secondary-100'
+            }`}
+          >
+            <List size={15} />Lista
+          </button>
+          <button
+            onClick={() => { setViewMode('calendar'); setSelectedDateFilter(null); }}
+            aria-pressed={viewMode === 'calendar'}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-[12.5px] font-semibold transition-colors ${
+              viewMode === 'calendar' ? 'bg-primary-50 text-primary-700' : 'text-secondary-600 hover:bg-secondary-100'
+            }`}
+          >
+            <CalendarDays size={15} />Calendario
+          </button>
         </div>
       </div>
-    
+
       {viewMode === 'list' && (
         <>
-        <div className="bg-surface p-3 rounded-lg shadow-md flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-            <div className="flex flex-wrap gap-1">
-                {filterOptions.map(opt => (
-                <Button
-                    key={opt.value}
-                    variant={filter === opt.value ? 'primary' : 'outline'}
-                    onClick={() => setFilter(opt.value)}
-                    size="sm"
-                    className={filter === opt.value ? '' : 'border-secondary-300 text-secondary-600 hover:bg-secondary-50'}
+          <Card className="px-5 py-[18px]">
+            <div className="flex items-start justify-between gap-4 mb-3.5">
+              <div>
+                <h2 className="m-0 text-[16.5px] font-bold tracking-[-0.3px] text-secondary-900">Filtros de turnos</h2>
+                <p className="mt-0.5 mb-0 text-[12.5px] text-secondary-500">Filtrar por estado del turno</p>
+              </div>
+              {selectedDateFilter && (
+                <button
+                  onClick={clearDateFilter}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-[9px] border border-secondary-200
+                             text-[12.5px] font-semibold text-secondary-600 hover:bg-secondary-100 transition-colors flex-shrink-0"
                 >
-                    {opt.label}
-                </Button>
-                ))}
+                  {new Date(selectedDateFilter + 'T00:00:00').toLocaleDateString('es-AR')} · Limpiar
+                </button>
+              )}
             </div>
-            {selectedDateFilter && (
-                <div className="flex items-center gap-2">
-                    <p className="text-sm text-secondary-700">
-                        Mostrando turnos para: <span className="font-semibold">{new Date(selectedDateFilter + 'T00:00:00').toLocaleDateString()}</span>
-                    </p>
-                    <Button onClick={clearDateFilter} size="sm" variant="ghost" className="text-primary-600 hover:text-primary-700">
-                        Limpiar Filtro
-                    </Button>
-                </div>
-            )}
-        </div>
-        <div className="bg-surface shadow-lg rounded-lg overflow-x-auto">
-            <table className="min-w-full divide-y divide-secondary-200">
-            <thead className="bg-secondary-50">
-                <tr>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Fecha y Hora</th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Cliente</th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Mascota</th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Motivo</th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Estado</th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Acciones</th>
-                </tr>
-            </thead>
-            <tbody className="bg-surface divide-y divide-secondary-200">
-                {filteredAppointments.length > 0 ? filteredAppointments.map(app => {
-                const client = getClientById(app.cliente_id);
-                const pet = getPetById(app.mascota_id);
-                
-                let statusColorClass = '';
-                const statusText = app.estado; 
-                switch(app.estado) {
-                    case EstadoTurno.PENDIENTE: 
-                        statusColorClass = 'bg-warning-100 text-warning-800';
-                        break;
-                    case EstadoTurno.ATENDIDO: 
-                        statusColorClass = 'bg-success-100 text-success-800';
-                        break;
-                    case EstadoTurno.AUSENTE: 
-                        statusColorClass = 'bg-secondary-200 text-secondary-700';
-                        break;
-                    case EstadoTurno.CANCELADO:
-                        statusColorClass = 'bg-error-100 text-error-800';
-                        break;
-                }
+            <div className="flex flex-wrap gap-1.5">
+              {filterOptions.map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => setFilter(opt.value)}
+                  aria-pressed={filter === opt.value}
+                  className={`px-3 py-2 rounded-[9px] text-[12.5px] font-semibold transition-colors border ${
+                    filter === opt.value
+                      ? 'bg-primary-50 border-primary-200 text-primary-700'
+                      : 'bg-surface border-secondary-200 text-secondary-600 hover:bg-secondary-100'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </Card>
 
-                return (
-                    <tr key={app.id_turno} className="hover:bg-secondary-50 transition-colors">
-                      <td className="px-4 py-4 whitespace-nowrap">
-                          <div className="text-sm text-secondary-900">{new Date(app.fecha + 'T00:00:00').toLocaleDateString()}</div>
-                          <div className="text-xs text-secondary-500">{app.hora}</div>
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-secondary-700">{client?.nombre || 'N/A'}</td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-secondary-700">{pet?.nombre || 'N/A'}</td>
-                      <td className="px-4 py-4 text-sm text-secondary-700 max-w-xs truncate" title={app.motivo}>{app.motivo}</td>
-                      <td className="px-4 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColorClass}`}>
-                          {statusText}
+          <DataCard
+            title="Turnos"
+            count={filteredAppointments.length}
+            filtered={hayFiltro}
+            actionLabel="Nuevo"
+            onAction={() => handleOpenAppointmentModal()}
+          >
+            {filteredAppointments.length > 0 ? (
+              <TableWrap>
+                <thead>
+                  <tr>
+                    <Th>Fecha y hora</Th>
+                    <Th>Cliente</Th>
+                    <Th>Mascota</Th>
+                    <Th>Motivo</Th>
+                    <Th>Estado</Th>
+                    <Th className="text-right">Acciones</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredAppointments.map(app => {
+                    const client = getClientById(app.cliente_id);
+                    const pet = getPetById(app.mascota_id);
+                    const badge: Record<string, string> = {
+                      [EstadoTurno.PENDIENTE]: 'bg-warning-50 text-warning-700',
+                      [EstadoTurno.ATENDIDO]: 'bg-primary-50 text-primary-700',
+                      [EstadoTurno.AUSENTE]: 'bg-secondary-100 text-secondary-600',
+                      [EstadoTurno.CANCELADO]: 'bg-error-50 text-error-600',
+                    };
+
+                    return (
+                      <Tr key={app.id_turno}>
+                        <Td className="whitespace-nowrap">
+                          <span className="flex flex-col">
+                            <span className="font-mono text-[12.5px] text-secondary-900">
+                              {new Date(app.fecha + 'T00:00:00').toLocaleDateString('es-AR')}
+                            </span>
+                            <span className="font-mono text-[11.5px] text-primary-700 font-semibold">{app.hora}</span>
                           </span>
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex items-center space-x-1">
-                          {app.estado === EstadoTurno.PENDIENTE && (
+                        </Td>
+                        <Td className="text-secondary-700">{client?.nombre || '—'}</Td>
+                        <Td>
+                          <span className="flex items-center gap-2">
+                            <SpeciesIcon especie={pet?.especie} size={15} className="text-secondary-500 flex-shrink-0" />
+                            <span className="text-secondary-700">{pet?.nombre || '—'}</span>
+                          </span>
+                        </Td>
+                        <Td className="max-w-xs truncate text-secondary-700">{app.motivo}</Td>
+                        <Td>
+                          <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap ${badge[app.estado] ?? badge[EstadoTurno.PENDIENTE]}`}>
+                            {app.estado}
+                          </span>
+                        </Td>
+                        <Td>
+                          <RowActions>
+                            {app.estado === EstadoTurno.PENDIENTE && (
                               <>
-                                <Button size="sm" variant="ghost" onClick={() => handleOpenConsultationModal(app)} title="Atender Turno" className="text-success-600 hover:bg-success-50 p-1.5">
-                                    <CheckCircle className="h-4 w-4" />
-                                </Button>
-                                <Button size="sm" variant="ghost" onClick={() => handleMarkAbsent(app)} title="Marcar Ausente" className="text-secondary-600 hover:bg-secondary-100 p-1.5">
-                                    <UserX className="h-4 w-4" />
-                                </Button>
-                                <Button size="sm" variant="ghost" onClick={() => handleOpenAppointmentModal(app)} title="Editar Turno" className="text-accent-600 hover:bg-accent-50 p-1.5" disabled={app.estado !== EstadoTurno.PENDIENTE}>
-                                    <Edit3 className="h-4 w-4" />
-                                </Button>
+                                <IconAction label="Atender turno" onClick={() => handleOpenConsultationModal(app)}>
+                                  <CheckCircle size={15} />
+                                </IconAction>
+                                <IconAction label="Marcar ausente" onClick={() => handleMarkAbsent(app)}>
+                                  <UserX size={15} />
+                                </IconAction>
+                                <IconAction label="Editar turno" onClick={() => handleOpenAppointmentModal(app)}>
+                                  <EditIcon />
+                                </IconAction>
                               </>
-                          )}
-                           {app.estado === EstadoTurno.ATENDIDO && pet && (
-                                <Button size="sm" variant="ghost" onClick={() => navigate(`/pets/${pet.id_mascota}/history`)} title="Ver Historial" className="text-blue-600 hover:bg-blue-50 p-1.5">
-                                    <Eye className="h-4 w-4" />
-                                </Button>
-                           )}
-                          <Button size="sm" variant="ghost" onClick={() => handleDeleteAppointment(app.id_turno)} title="Eliminar Turno" className="text-error-600 hover:bg-error-50 p-1.5">
-                              <Trash2 className="h-4 w-4" />
-                          </Button>
-                          </div>
-                      </td>
-                    </tr> 
-                );
-                }) : (
-                <tr>
-                    <td colSpan={6} className="px-6 py-10 text-center text-secondary-500">
-                    <CalendarDays className="mx-auto h-10 w-10 text-secondary-400 mb-2" />
-                    No hay turnos para mostrar con los filtros actuales.
-                    </td>
-                </tr>
-                )}
-            </tbody>
-            </table>
-        </div>
+                            )}
+                            {app.estado === EstadoTurno.ATENDIDO && pet && (
+                              <IconAction label="Ver historial médico" onClick={() => navigate(`/pets/${pet.id_mascota}/history`)}>
+                                <ViewIcon />
+                              </IconAction>
+                            )}
+                            <IconAction label="Eliminar turno" variant="danger" onClick={() => handleDeleteAppointment(app.id_turno)}>
+                              <DeleteIcon />
+                            </IconAction>
+                          </RowActions>
+                        </Td>
+                      </Tr>
+                    );
+                  })}
+                </tbody>
+              </TableWrap>
+            ) : (
+              <EmptyState
+                icon={<CalendarDays size={24} />}
+                title="No hay turnos"
+                hint="Ningún turno coincide con los filtros actuales."
+              />
+            )}
+          </DataCard>
         </>
       )}
 
