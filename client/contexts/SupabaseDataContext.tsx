@@ -98,7 +98,7 @@ interface SupabaseDataContextType {
     files?: File[]
   ) => Promise<HistorialMedico>;
   getMedicalHistoryByPetId: (petId: string) => HistorialMedico[];
-  deleteMedicalHistoryEvent: (eventId: string) => Promise<void>;
+  deleteMedicalHistoryEvent: (eventId: string, password: string) => Promise<void>;
   updateMedicalHistoryEvent: (eventId: string, updatedData: Partial<Pick<HistorialMedico, 'fecha' | 'descripcion'>>) => Promise<void>;
   addAttachmentToEvent: (eventId: string, file: File) => Promise<AttachmentFile>;
   deleteAttachment: (attachmentId: string, eventId: string, password: string) => Promise<void>;
@@ -403,8 +403,9 @@ export const SupabaseDataProvider: React.FC<{ children: ReactNode }> = ({ childr
   const getMedicalHistoryByPetId = (petId: string) =>
     medicalHistory.filter(mh => mh.mascota_id === petId).sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
 
-  const deleteMedicalHistoryEvent = async (eventId: string): Promise<void> => {
-    await apiDelete(`/historial-medico/${eventId}`);
+  // El backend exige la contraseña: borra tambien los adjuntos del evento.
+  const deleteMedicalHistoryEvent = async (eventId: string, password: string): Promise<void> => {
+    await apiDelete(`/historial-medico/${eventId}`, { password });
     setMedicalHistory(prev => prev.filter(event => event.id_evento !== eventId));
   };
 

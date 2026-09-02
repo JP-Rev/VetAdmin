@@ -6,7 +6,7 @@ import { Button } from '../components/common/Button';
 import { Modal } from '../components/Modal';
 import { FormField } from '../components/common/FormField';
 import { PrintableMedicalHistory } from '../components/PrintableMedicalHistory';
-import { FileText, Plus, Pill, Stethoscope, Activity, ArrowLeft, ShieldCheck, Printer, Paperclip, XCircle, FileImage, FileVideo, FileType, Pencil, Trash2 } from 'lucide-react';
+import { FileText, Plus, Pill, Stethoscope, Activity, ArrowLeft, ShieldCheck, Printer, Paperclip, XCircle, FileImage, FileVideo, FileType, Pencil, Trash2, ChevronRight } from 'lucide-react';
 import { SpeciesIcon } from '../lib/speciesIcon';
 import { PasswordConfirmDialog } from '../components/common/PasswordConfirmDialog';
 
@@ -385,12 +385,23 @@ const EditEventFormComponent: React.FC<EditEventFormProps> = ({ initialEvent, on
 export const MedicalHistoryPage: React.FC = () => {
   const { petId } = useParams<{ petId: string }>();
   const navigate = useNavigate();
-  const { getPetById, getClientById, getMedicalHistoryByPetId, updateMedicalHistoryEvent, diseases, surgeries, petDiseases, petSurgeries, printContent, breeds, deleteAttachment } = useSupabaseData();
+  const { getPetById, getClientById, getMedicalHistoryByPetId, updateMedicalHistoryEvent, diseases, surgeries, petDiseases, petSurgeries, printContent, breeds, deleteAttachment, deleteMedicalHistoryEvent } = useSupabaseData();
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<HistorialMedico | undefined>(undefined);
   const [deletingAttachment, setDeletingAttachment] = useState<{ att: AttachmentFile; eventId: string } | null>(null);
+  const [deletingEvent, setDeletingEvent] = useState<HistorialMedico | null>(null);
+  // Colapsados por defecto: la historia clinica se lee de un vistazo y se
+  // despliega solo el evento que interesa.
+  const [expandidos, setExpandidos] = useState<Set<string>>(new Set());
+
+  const toggleEvento = (id: string) =>
+    setExpandidos(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
 
   if (!petId) {
     return <div className="p-6 text-error-600">Error: No se especificó ID de mascota.</div>;
@@ -549,16 +560,43 @@ export const MedicalHistoryPage: React.FC = () => {
             {historyEvents.map(event => {
               const tone = eventTone[event.tipo_evento] ?? { dot: 'bg-secondary-400', text: 'text-secondary-700' };
               const ref = getReferenceDetails(event);
+              const abierto = expandidos.has(event.id_evento);
+              const nAdjuntos = event.attachments?.length ?? 0;
+              const resumen = event.descripcion.length > 70
+                ? `${event.descripcion.slice(0, 70)}\u2026`
+                : event.descripcion;
               return (
                 <li key={event.id_evento} className="relative pl-6 pb-7 last:pb-0">
                   <span className={`absolute -left-[5px] top-1.5 w-2.5 h-2.5 rounded-full ring-4 ring-surface ${tone.dot}`} />
 
-                  <div className="flex flex-wrap items-start justify-between gap-2 mb-1.5">
-                    <span className="flex items-center gap-2 min-w-0">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <button
+                      type="button"
+                      onClick={() => toggleEvento(event.id_evento)}
+                      aria-expanded={abierto}
+                      className="flex items-center gap-2 min-w-0 text-left"
+                    >
+                      <ChevronRight
+                        size={14}
+                        className={`text-secondary-400 transition-transform flex-shrink-0 ${abierto ? 'rotate-90' : ''}`}
+                      />
                       <span className={tone.text}>{getEventIcon(event.tipo_evento)}</span>
-                      <strong className={`text-[14.5px] font-bold ${tone.text}`}>{event.tipo_evento}</strong>
-                    </span>
+                      <strong className={`text-[14.5px] font-bold ${tone.text} flex-shrink-0`}>{event.tipo_evento}</strong>
+                      {!abierto && (
+                        <span className="text-[12.5px] text-secondary-500 truncate hidden sm:inline">
+                          &mdash; {resumen}
+                        </span>
+                      )}
+                    </button>
                     <span className="flex items-center gap-1.5 flex-shrink-0">
+                      {nAdjuntos > 0 && (
+                        <span
+                          title={`${nAdjuntos} archivo(s) adjunto(s)`}
+                          className="flex items-center gap-1 font-mono text-[10.5px] text-secondary-500"
+                        >
+                          <Paperclip size={12} />{nAdjuntos}
+                        </span>
+                      )}
                       <span className="font-mono text-[11.5px] text-secondary-500">
                         {new Date(event.fecha).toLocaleString('es-AR', {
                           day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
@@ -567,10 +605,15 @@ export const MedicalHistoryPage: React.FC = () => {
                       <IconBtn label="Editar evento" size="sm" onClick={() => handleOpenEditModal(event)}>
                         <Pencil size={13} />
                       </IconBtn>
+                      <IconBtn label="Eliminar evento" size="sm" variant="danger" onClick={() => setDeletingEvent(event)}>
+                        <Trash2 size={13} />
+                      </IconBtn>
                     </span>
                   </div>
 
-                  <p className="m-0 text-[13.5px] text-secondary-700 whitespace-pre-wrap break-words">
+                  {abierto && (
+                  <>
+                  <p className="mt-2 mb-0 text-[13.5px] text-secondary-700 whitespace-pre-wrap break-words">
                     {event.descripcion}
                   </p>
 
@@ -613,6 +656,8 @@ export const MedicalHistoryPage: React.FC = () => {
                       ))}
                     </ul>
                   )}
+                  </>
+                  )}
                 </li>
               );
             })}
@@ -644,6 +689,26 @@ export const MedicalHistoryPage: React.FC = () => {
           await deleteAttachment(deletingAttachment.att.id, deletingAttachment.eventId, password);
         }}
         onClose={() => setDeletingAttachment(null)}
+      />
+
+      <PasswordConfirmDialog
+        isOpen={deletingEvent !== null}
+        title="Eliminar evento de la historia clínica"
+        description={
+          <>
+            Vas a eliminar el evento <strong>{deletingEvent?.tipo_evento}</strong> del{' '}
+            {deletingEvent && new Date(deletingEvent.fecha).toLocaleDateString('es-AR')}
+            {(deletingEvent?.attachments?.length ?? 0) > 0 && (
+              <> y sus {deletingEvent!.attachments!.length} archivo(s) adjunto(s)</>
+            )}
+            . No se puede recuperar.
+          </>
+        }
+        onConfirm={async (password) => {
+          if (!deletingEvent) return;
+          await deleteMedicalHistoryEvent(deletingEvent.id_evento, password);
+        }}
+        onClose={() => setDeletingEvent(null)}
       />
     </div>
   );

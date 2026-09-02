@@ -78,3 +78,20 @@ export async function attachUserIfPresent(req, _res, next) {
   }
   next()
 }
+
+/**
+ * Middleware para acciones destructivas: exige reingresar la contraseña del
+ * usuario logueado. Tener la sesion abierta no alcanza cuando lo que se borra
+ * no se puede recuperar (archivos en disco, eventos de historia clinica).
+ */
+export async function requirePasswordConfirmation(req, res, next) {
+  const password = req.body?.password
+  if (typeof password !== 'string' || password.length === 0) {
+    return res.status(400).json({ error: 'Ingresá tu contraseña para confirmar' })
+  }
+  const user = await prisma.user.findUnique({ where: { id: req.user.id } })
+  if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+    return res.status(403).json({ error: 'Contraseña incorrecta' })
+  }
+  next()
+}

@@ -1,8 +1,8 @@
 import { Router } from 'express'
-import bcrypt from 'bcryptjs'
 import { prisma } from '../prisma.js'
 import { asyncRoute } from '../http.js'
 import { removeAttachmentFile } from '../storage.js'
+import { requirePasswordConfirmation } from '../auth.js'
 
 const router = Router()
 
@@ -25,17 +25,8 @@ router.get(
  */
 router.delete(
   '/:id',
+  asyncRoute(requirePasswordConfirmation),
   asyncRoute(async (req, res) => {
-    const password = req.body?.password
-    if (typeof password !== 'string' || password.length === 0) {
-      return res.status(400).json({ error: 'Ingresá tu contraseña para confirmar' })
-    }
-
-    const user = await prisma.user.findUnique({ where: { id: req.user.id } })
-    if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
-      return res.status(403).json({ error: 'Contraseña incorrecta' })
-    }
-
     const attachment = await prisma.attachment.delete({ where: { id: req.params.id } })
     removeAttachmentFile(attachment.storedPath)
     res.status(204).end()

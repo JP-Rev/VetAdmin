@@ -4,7 +4,8 @@ import { toHistorialMedico } from '../serializers.js'
 import { crudRouter } from './crudRouter.js'
 import { asyncRoute } from '../http.js'
 import { assertOneOf, TIPOS_EVENTO_HISTORIAL, ValidationError } from '../validators.js'
-import { uploadAttachment } from '../storage.js'
+import { uploadAttachment, removeAttachmentFile } from '../storage.js'
+import { requirePasswordConfirmation } from '../auth.js'
 
 const includeAttachments = { include: { attachments: true } }
 
@@ -26,7 +27,28 @@ const toUpdateData = (body) => {
   return data
 }
 
-const router = crudRouter({
+const router = Router()
+
+/**
+ * Borrar un evento de la historia clinica exige la contraseña del usuario:
+ * es irreversible y se lleva puestos sus adjuntos.
+ *
+ * Se registra ANTES del crudRouter para que gane sobre su DELETE generico.
+ * Ademas borra los archivos del disco: el `onDelete: Cascade` del schema
+ * elimina las filas de Attachment, pero los archivos quedarian huerfanos.
+ */
+router.delete(
+  '/:id',
+  asyncRoute(requirePasswordConfirmation),
+  asyncRoute(async (req, res) => {
+    const attachments = await prisma.attachment.findMany({ where: { historialId: req.params.id } })
+    await prisma.historialMedico.delete({ where: { id: req.params.id } })
+    attachments.forEach((a) => removeAttachmentFile(a.storedPath))
+    res.status(204).end()
+  })
+)
+
+router.use(crudRouter({
   model: {
     create: (args) => prisma.historialMedico.create({ ...args, ...includeAttachments }),
     update: (args) => prisma.historialMedico.update({ ...args, ...includeAttachments }),
@@ -35,7 +57,7 @@ const router = crudRouter({
   serialize: toHistorialMedico,
   toCreateData,
   toUpdateData,
-})
+}))
 
 const loadMascotaIdForHistorial = asyncRoute(async (req, _res, next) => {
   const historial = await prisma.historialMedico.findUniqueOrThrow({ where: { id: req.params.id } })
