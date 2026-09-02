@@ -101,7 +101,7 @@ interface SupabaseDataContextType {
   deleteMedicalHistoryEvent: (eventId: string) => Promise<void>;
   updateMedicalHistoryEvent: (eventId: string, updatedData: Partial<Pick<HistorialMedico, 'fecha' | 'descripcion'>>) => Promise<void>;
   addAttachmentToEvent: (eventId: string, file: File) => Promise<AttachmentFile>;
-  deleteAttachment: (attachmentId: string, eventId: string) => Promise<void>;
+  deleteAttachment: (attachmentId: string, eventId: string, password: string) => Promise<void>;
 
   // Breed operations
   addBreed: (breedData: RazaForm) => Promise<Raza>;
@@ -429,8 +429,10 @@ export const SupabaseDataProvider: React.FC<{ children: ReactNode }> = ({ childr
     return attachment;
   };
 
-  const deleteAttachment = async (attachmentId: string, eventId: string): Promise<void> => {
-    await apiDelete(`/attachments/${attachmentId}`);
+  // El backend exige la contraseña del usuario: borrar un adjunto tambien borra
+  // el archivo del disco y no se puede deshacer.
+  const deleteAttachment = async (attachmentId: string, eventId: string, password: string): Promise<void> => {
+    await apiDelete(`/attachments/${attachmentId}`, { password });
 
     setMedicalHistory(prev => prev.map(event =>
       event.id_evento === eventId

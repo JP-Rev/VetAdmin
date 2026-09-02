@@ -4,7 +4,7 @@ import { useSupabaseData } from '../contexts/SupabaseDataContext';
 import { EstadoTurno } from '../types';
 import {
   LayoutDashboard, Users, CalendarDays, ShoppingCart, Package, X as IconClose,
-  PawPrint, BarChart3, Settings as IconSettings, CreditCard,
+  PawPrint, Settings as IconSettings, CreditCard,
 } from 'lucide-react';
 import { FrodosoftLogo, FrodosoftWordmark } from './FrodosoftLogo';
 
@@ -113,7 +113,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
           <NavItem to="/ventas" icon={<ShoppingCart size={17} />} onClick={handleMobileLinkClick}>Ventas</NavItem>
           <NavItem to="/products" icon={<Package size={17} />} onClick={handleMobileLinkClick}>Productos</NavItem>
           <NavItem to="/expenses" icon={<CreditCard size={17} />} onClick={handleMobileLinkClick}>Gastos</NavItem>
-          <NavItem to="/statistics" icon={<BarChart3 size={17} />} onClick={handleMobileLinkClick}>Estadísticas</NavItem>
         </NavSection>
 
         <NavSection label="Sistema">

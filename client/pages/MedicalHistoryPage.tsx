@@ -6,7 +6,40 @@ import { Button } from '../components/common/Button';
 import { Modal } from '../components/Modal';
 import { FormField } from '../components/common/FormField';
 import { PrintableMedicalHistory } from '../components/PrintableMedicalHistory';
-import { FileText, Plus, CalendarDays, Pill, Stethoscope, Activity, ArrowLeft, ShieldCheck, Printer, Paperclip, XCircle, FileImage, FileVideo, FileType, Edit3, Eye } from 'lucide-react';
+import { FileText, Plus, Pill, Stethoscope, Activity, ArrowLeft, ShieldCheck, Printer, Paperclip, XCircle, FileImage, FileVideo, FileType, Pencil, Trash2 } from 'lucide-react';
+import { SpeciesIcon } from '../lib/speciesIcon';
+import { PasswordConfirmDialog } from '../components/common/PasswordConfirmDialog';
+
+/**
+ * Boton de accion solo con icono: la etiqueta va en title/aria-label y aparece
+ * al pasar el mouse, para no llenar la pantalla de texto.
+ */
+const IconBtn: React.FC<{
+  label: string;
+  onClick: () => void;
+  children: React.ReactNode;
+  variant?: 'default' | 'primary' | 'danger';
+  size?: 'sm' | 'md';
+}> = ({ label, onClick, children, variant = 'default', size = 'md' }) => {
+  const dim = size === 'sm' ? 'w-[26px] h-[26px]' : 'w-[36px] h-[36px]';
+  const tone =
+    variant === 'primary'
+      ? 'bg-primary-700 border-primary-700 text-white hover:bg-primary-800'
+      : variant === 'danger'
+      ? 'border-error-200 text-error-600 hover:bg-error-50 hover:border-error-300'
+      : 'border-secondary-200 text-secondary-600 hover:bg-secondary-100 hover:text-secondary-900 hover:border-secondary-300';
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={label}
+      aria-label={label}
+      className={`${dim} ${tone} rounded-[9px] border flex items-center justify-center flex-shrink-0 transition-colors`}
+    >
+      {children}
+    </button>
+  );
+};
 
 interface NewEventFormProps {
   petId: string;
@@ -223,15 +256,9 @@ const EditEventFormComponent: React.FC<EditEventFormProps> = ({ initialEvent, on
         setNewFiles(prev => prev.filter((_, i) => i !== index));
     };
 
-    const handleRemoveExistingAttachment = async (attachmentId: string) => {
-        try {
-            await deleteAttachment(attachmentId, initialEvent.id_evento);
-            setExistingAttachments(prev => prev.filter(att => att.id !== attachmentId));
-        } catch (error) {
-            console.error('Error deleting attachment:', error);
-            alert('Error al eliminar el archivo adjunto.');
-        }
-    };
+    // Borrar un adjunto pide la contraseña: el backend la exige porque tambien
+    // borra el archivo del disco.
+    const [deletingAtt, setDeletingAtt] = useState<AttachmentFile | null>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -297,7 +324,7 @@ const EditEventFormComponent: React.FC<EditEventFormProps> = ({ initialEvent, on
                                     <a href={att.url} target="_blank" rel="noopener noreferrer" className="truncate text-primary-600 hover:underline" title={att.name}>
                                         {att.name} ({(att.size / 1024).toFixed(1)} KB)
                                     </a>
-                                    <Button type="button" variant="ghost" size="sm" onClick={() => handleRemoveExistingAttachment(att.id)} className="p-0.5 text-error-500 hover:text-error-700">
+                                    <Button type="button" variant="ghost" size="sm" onClick={() => setDeletingAtt(att)} className="p-0.5 text-error-500 hover:text-error-700">
                                         <XCircle size={14} />
                                     </Button>
                                 </li>
@@ -334,74 +361,36 @@ const EditEventFormComponent: React.FC<EditEventFormProps> = ({ initialEvent, on
                 <Button type="button" variant="secondary" onClick={onClose}>Cancelar</Button>
                 <Button type="submit" variant="primary" disabled={submitting}>{submitting ? 'Guardando...' : 'Guardar Cambios'}</Button>
             </div>
+
+            <PasswordConfirmDialog
+              isOpen={deletingAtt !== null}
+              title="Eliminar archivo adjunto"
+              description={
+                <>
+                  Vas a eliminar <strong>{deletingAtt?.name}</strong>. El archivo se borra del servidor
+                  y no se puede recuperar.
+                </>
+              }
+              onConfirm={async (password) => {
+                if (!deletingAtt) return;
+                await deleteAttachment(deletingAtt.id, initialEvent.id_evento, password);
+                setExistingAttachments(prev => prev.filter(a => a.id !== deletingAtt.id));
+              }}
+              onClose={() => setDeletingAtt(null)}
+            />
         </form>
     );
-};
-
-// Componente para mostrar texto con límite de caracteres y modal para texto completo
-interface TruncatedTextProps {
-  text: string;
-  maxLength?: number;
-  className?: string;
-}
-
-const TruncatedText: React.FC<TruncatedTextProps> = ({ text, maxLength = 80, className = "" }) => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  
-  if (text.length <= maxLength) {
-    return (
-      <div className={`whitespace-pre-wrap break-words leading-relaxed ${className}`}>
-        {text}
-      </div>
-    );
-  }
-
-  return (
-    <>
-      <div className={`whitespace-pre-wrap break-words leading-relaxed ${className}`}>
-        {text.substring(0, maxLength)}...
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="ml-2 text-primary-600 hover:text-primary-700 text-sm font-medium inline-flex items-center"
-          title="Ver descripción completa"
-        >
-          <Eye size={14} className="mr-1" />
-          Ver completo
-        </button>
-      </div>
-
-      {/* Modal para mostrar texto completo */}
-      {isModalOpen && (
-        <Modal 
-          isOpen={isModalOpen} 
-          onClose={() => setIsModalOpen(false)} 
-          title="Descripción Completa"
-          size="lg"
-        >
-          <div className="max-h-96 overflow-y-auto p-4 bg-secondary-50 rounded-md border">
-            <div className="whitespace-pre-wrap break-words leading-relaxed text-secondary-700">
-              {text}
-            </div>
-          </div>
-          <div className="flex justify-end mt-4">
-            <Button onClick={() => setIsModalOpen(false)} variant="primary">
-              Cerrar
-            </Button>
-          </div>
-        </Modal>
-      )}
-    </>
-  );
 };
 
 export const MedicalHistoryPage: React.FC = () => {
   const { petId } = useParams<{ petId: string }>();
   const navigate = useNavigate();
-  const { getPetById, getClientById, getMedicalHistoryByPetId, updateMedicalHistoryEvent, diseases, surgeries, petDiseases, petSurgeries, printContent, breeds } = useSupabaseData();
+  const { getPetById, getClientById, getMedicalHistoryByPetId, updateMedicalHistoryEvent, diseases, surgeries, petDiseases, petSurgeries, printContent, breeds, deleteAttachment } = useSupabaseData();
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<HistorialMedico | undefined>(undefined);
+  const [deletingAttachment, setDeletingAttachment] = useState<{ att: AttachmentFile; eventId: string } | null>(null);
 
   if (!petId) {
     return <div className="p-6 text-error-600">Error: No se especificó ID de mascota.</div>;
@@ -487,10 +476,8 @@ export const MedicalHistoryPage: React.FC = () => {
          return `Cirugía: ${surgery?.tipo || 'N/A'}. Fecha: ${new Date(petSurgery.fecha  + 'T00:00:00').toLocaleDateString()}. ${petSurgery.costo_final ? 'Costo: $' + petSurgery.costo_final.toFixed(2) + '.' : ''}`;
       }
     }
-    if (event.tipo_evento === TipoEventoHistorial.CONSULTA && event.referencia_id?.startsWith('turn_')) { 
-        return `Referente al turno ID: ${event.referencia_id.substring(0,10)}...`;
-    }
-    return `Ref. ID: ${event.referencia_id.substring(0,8)}`;
+    // Para el resto, el id interno no le dice nada a quien usa la app.
+    return "";
   };
   
   const getFileIcon = (mimeType: string) => {
@@ -500,114 +487,164 @@ export const MedicalHistoryPage: React.FC = () => {
     return <Paperclip size={16} className="text-secondary-500 mr-1" />;
   };
 
+  const eventTone: Record<string, { dot: string; text: string }> = {
+    [TipoEventoHistorial.CONSULTA]: { dot: 'bg-primary-600', text: 'text-primary-700' },
+    [TipoEventoHistorial.CIRUGIA]: { dot: 'bg-error-500', text: 'text-error-600' },
+    [TipoEventoHistorial.TRATAMIENTO]: { dot: 'bg-accent-500', text: 'text-accent-700' },
+    [TipoEventoHistorial.ENFERMEDAD_REGISTRADA]: { dot: 'bg-warning-500', text: 'text-warning-700' },
+    [TipoEventoHistorial.VACUNACION]: { dot: 'bg-success-500', text: 'text-success-700' },
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="bg-surface p-4 sm:p-6 rounded-lg shadow-md">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
-            <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-secondary-800">Historial Médico: {pet.nombre}</h1>
-                <p className="text-md text-secondary-600">Propietario: <Link to={`/clients/${client?.id_cliente}`} className="text-primary-600 hover:underline">{client?.nombre || 'N/A'}</Link></p>
-                <p className="text-sm text-secondary-500">Especie: {pet.especie} - Sexo: {pet.sexo}</p>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                <Button onClick={() => setIsModalOpen(true)} leftIcon={<Plus />} className="w-full sm:w-auto">
-                    Nuevo Evento Manual
-                </Button>
-                <Button onClick={handlePrintMedicalHistory} leftIcon={<Printer />} variant="outline" className="w-full sm:w-auto">
-                    Imprimir HC
-                </Button>
-            </div>
+    <div className="flex flex-col gap-5">
+      {/* Encabezado compacto: acciones solo con icono, la etiqueta aparece al pasar el mouse */}
+      <div className="flex flex-wrap items-center gap-3 bg-surface border border-secondary-200 rounded-[18px]
+                      px-5 py-4 shadow-[0_1px_2px_rgba(15,31,29,0.04)]">
+        <IconBtn label="Volver al cliente" onClick={() => navigate(`/clients/${client?.id_cliente || ''}`)}>
+          <ArrowLeft size={16} />
+        </IconBtn>
+
+        <span className="w-11 h-11 rounded-xl bg-secondary-100 text-secondary-600 flex items-center justify-center flex-shrink-0">
+          <SpeciesIcon especie={pet.especie} size={20} />
+        </span>
+
+        <div className="min-w-0 flex-1">
+          <h1 className="m-0 text-[22px] font-extrabold tracking-[-0.5px] text-secondary-900 truncate">
+            {pet.nombre}
+          </h1>
+          <p className="m-0 text-[12.5px] text-secondary-500 truncate">
+            {pet.especie} · {pet.sexo} ·{' '}
+            <Link to={`/clients/${client?.id_cliente}`} className="text-primary-700 hover:underline">
+              {client?.nombre || 'Sin propietario'}
+            </Link>
+          </p>
         </div>
-        <Button variant="outline" onClick={() => navigate(`/clients/${client?.id_cliente || ''}`)} className="text-sm" leftIcon={<ArrowLeft size={16}/>}>
-            Volver a Detalles del Cliente
-        </Button>
+
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <IconBtn label="Imprimir historia clínica" onClick={handlePrintMedicalHistory}>
+            <Printer size={16} />
+          </IconBtn>
+          <IconBtn label="Nuevo evento manual" variant="primary" onClick={() => setIsModalOpen(true)}>
+            <Plus size={16} />
+          </IconBtn>
+        </div>
       </div>
-      
+
       {isModalOpen && (
-        <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={`Nuevo Evento Manual para ${pet.nombre}`} size="lg">
-            <NewEventFormComponent petId={pet.id_mascota} onSave={handleEventSaved} onClose={() => setIsModalOpen(false)} />
+        <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={`Nuevo evento para ${pet.nombre}`} size="lg">
+          <NewEventFormComponent petId={pet.id_mascota} onSave={handleEventSaved} onClose={() => setIsModalOpen(false)} />
         </Modal>
       )}
 
       {isEditModalOpen && editingEvent && (
-        <Modal isOpen={isEditModalOpen} onClose={handleCloseEditModal} title={`Editar Evento para ${pet.nombre}`} size="lg">
-            <EditEventFormComponent initialEvent={editingEvent} onSave={handleEditEventSave} onClose={handleCloseEditModal} />
+        <Modal isOpen={isEditModalOpen} onClose={handleCloseEditModal} title={`Editar evento de ${pet.nombre}`} size="lg">
+          <EditEventFormComponent initialEvent={editingEvent} onSave={handleEditEventSave} onClose={handleCloseEditModal} />
         </Modal>
       )}
 
       {historyEvents.length > 0 ? (
-        <div className="space-y-4">
-          {historyEvents.map(event => (
-            <div key={event.id_evento} className="bg-surface shadow-lg rounded-lg p-4 sm:p-5 overflow-hidden">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2">
-                <div className="flex items-center min-w-0 flex-1">
-                  {getEventIcon(event.tipo_evento)}
-                  <h3 className="text-lg font-semibold text-primary-700 truncate">{event.tipo_evento}</h3>
-                </div>
-                <div className="flex items-center gap-1 sm:gap-2 mt-1 sm:mt-0 flex-shrink-0">
-                    <p className="text-xs sm:text-sm text-secondary-500 flex items-center">
-                        <CalendarDays className="inline h-4 w-4 mr-1.5 text-secondary-400" />
-                        {new Date(event.fecha).toLocaleString([], { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                    <Button 
-                        size="sm" 
-                        variant="ghost" 
-                        onClick={() => handleOpenEditModal(event)} 
-                        title="Editar Entrada"
-                        className="text-accent-600 hover:bg-accent-50 p-1"
-                    >
-                        <Edit3 size={16} />
-                    </Button>
-                </div>
-              </div>
-              
-              {/* Descripción con límite de caracteres y modal para texto completo */}
-              <div className="mt-1 text-secondary-700 text-sm">
-                <TruncatedText text={event.descripcion} maxLength={80} />
-              </div>
-              
-              {event.referencia_id && (
-                <div className="mt-2 text-xs text-secondary-500 italic border-t border-secondary-200 pt-2 break-words">
-                  {getReferenceDetails(event)}
-                </div>
-              )}
-              
-              {event.attachments && event.attachments.length > 0 && (
-                <div className="mt-3 pt-2 border-t border-secondary-200">
-                    <h4 className="text-xs font-semibold text-secondary-600 mb-1">Archivos Adjuntos:</h4>
-                    <ul className="space-y-1">
-                        {event.attachments.map(att => (
-                            <li key={att.id} className="text-xs">
-                                <a 
-                                    href={att.url}
-                                    download={att.name} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer" 
-                                    className="text-primary-600 hover:text-primary-700 hover:underline flex items-center break-all"
-                                    title={`Ver/Descargar ${att.name}`}
-                                >
-                                    {getFileIcon(att.type)}
-                                    <span className="truncate max-w-xs">{att.name}</span>
-                                    <span className="ml-1 flex-shrink-0">({(att.size / 1024).toFixed(1)} KB)</span>
-                                    {att.type.startsWith('image/') && (
-                                      <img src={att.url} alt={`Miniatura de ${att.name}`} className="h-6 w-auto ml-2 border border-secondary-200 rounded object-cover flex-shrink-0"/>
-                                    )}
-                                </a>
-                            </li>
-                        ))}
+        <div className="bg-surface border border-secondary-200 rounded-[18px] px-5 py-5 shadow-[0_1px_2px_rgba(15,31,29,0.04)]">
+          {/* Linea de tiempo: la barra vertical hace legible el orden cronologico */}
+          <ol className="relative m-0 p-0 list-none border-l border-secondary-200 ml-[7px]">
+            {historyEvents.map(event => {
+              const tone = eventTone[event.tipo_evento] ?? { dot: 'bg-secondary-400', text: 'text-secondary-700' };
+              const ref = getReferenceDetails(event);
+              return (
+                <li key={event.id_evento} className="relative pl-6 pb-7 last:pb-0">
+                  <span className={`absolute -left-[5px] top-1.5 w-2.5 h-2.5 rounded-full ring-4 ring-surface ${tone.dot}`} />
+
+                  <div className="flex flex-wrap items-start justify-between gap-2 mb-1.5">
+                    <span className="flex items-center gap-2 min-w-0">
+                      <span className={tone.text}>{getEventIcon(event.tipo_evento)}</span>
+                      <strong className={`text-[14.5px] font-bold ${tone.text}`}>{event.tipo_evento}</strong>
+                    </span>
+                    <span className="flex items-center gap-1.5 flex-shrink-0">
+                      <span className="font-mono text-[11.5px] text-secondary-500">
+                        {new Date(event.fecha).toLocaleString('es-AR', {
+                          day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
+                        })}
+                      </span>
+                      <IconBtn label="Editar evento" size="sm" onClick={() => handleOpenEditModal(event)}>
+                        <Pencil size={13} />
+                      </IconBtn>
+                    </span>
+                  </div>
+
+                  <p className="m-0 text-[13.5px] text-secondary-700 whitespace-pre-wrap break-words">
+                    {event.descripcion}
+                  </p>
+
+                  {ref && <p className="mt-1.5 mb-0 text-[12px] text-secondary-500 italic">{ref}</p>}
+
+                  {event.attachments && event.attachments.length > 0 && (
+                    <ul className="flex flex-wrap gap-2 mt-3 m-0 p-0 list-none">
+                      {event.attachments.map(att => (
+                        <li
+                          key={att.id}
+                          className="flex items-center gap-2 bg-secondary-50 border border-secondary-200
+                                     rounded-[10px] pl-2.5 pr-1.5 py-1.5 max-w-full"
+                        >
+                          {att.type.startsWith('image/') ? (
+                            <img src={att.url} alt="" className="w-7 h-7 rounded object-cover border border-secondary-200 flex-shrink-0" />
+                          ) : (
+                            <span className="flex-shrink-0">{getFileIcon(att.type)}</span>
+                          )}
+                          <a
+                            href={att.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title={`Abrir ${att.name}`}
+                            className="text-[12.5px] text-secondary-800 hover:text-primary-700 truncate max-w-[190px]"
+                          >
+                            {att.name}
+                          </a>
+                          <span className="font-mono text-[10.5px] text-secondary-500 flex-shrink-0">
+                            {(att.size / 1024).toFixed(0)} KB
+                          </span>
+                          <IconBtn
+                            label="Eliminar archivo"
+                            size="sm"
+                            variant="danger"
+                            onClick={() => setDeletingAttachment({ att, eventId: event.id_evento })}
+                          >
+                            <Trash2 size={13} />
+                          </IconBtn>
+                        </li>
+                      ))}
                     </ul>
-                </div>
-              )}
-            </div>
-          ))}
+                  )}
+                </li>
+              );
+            })}
+          </ol>
         </div>
       ) : (
-        <div className="text-center py-10 bg-surface rounded-lg shadow">
-          <FileText className="mx-auto h-12 w-12 text-secondary-400" />
-          <h3 className="mt-2 text-lg font-medium text-secondary-900">Historial Vacío</h3>
-          <p className="mt-1 text-sm text-secondary-500">No hay eventos médicos registrados para {pet.nombre}.</p>
+        <div className="bg-surface border border-secondary-200 rounded-[18px] px-5 py-14 flex flex-col items-center gap-3 text-center">
+          <span className="w-14 h-14 rounded-[18px] bg-secondary-100 text-primary-700 flex items-center justify-center">
+            <FileText size={24} />
+          </span>
+          <strong className="text-[15px] text-secondary-900">Historial vacío</strong>
+          <p className="m-0 max-w-[320px] text-[13px] text-secondary-500">
+            Todavía no hay eventos médicos registrados para {pet.nombre}.
+          </p>
         </div>
       )}
+
+      <PasswordConfirmDialog
+        isOpen={deletingAttachment !== null}
+        title="Eliminar archivo adjunto"
+        description={
+          <>
+            Vas a eliminar <strong>{deletingAttachment?.att.name}</strong>. El archivo se borra del
+            servidor y no se puede recuperar.
+          </>
+        }
+        onConfirm={async (password) => {
+          if (!deletingAttachment) return;
+          await deleteAttachment(deletingAttachment.att.id, deletingAttachment.eventId, password);
+        }}
+        onClose={() => setDeletingAttachment(null)}
+      />
     </div>
   );
 };

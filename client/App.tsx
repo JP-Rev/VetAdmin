@@ -14,7 +14,6 @@ import { AppointmentsPage } from './pages/AppointmentsPage';
 import { ProductsPage } from './pages/ProductsPage';
 import { Ventas } from './pages/VentasPage'; 
 import { MedicalHistoryPage } from './pages/MedicalHistoryPage';
-import { StatisticsPage } from './pages/StatisticsPage'; 
 import { SettingsPage } from './pages/SettingsPage'; 
 import { ExpensesPage } from './pages/ExpensesPage'; 
 import { AlertCircle, Loader2 } from 'lucide-react';
@@ -109,7 +108,6 @@ const AppContent: React.FC = () => {
                 <Route path="/products" element={<ProductsPage />} />
                 <Route path="/ventas" element={<Ventas />} /> 
 
-                <Route path="/statistics" element={<StatisticsPage />} /> 
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/expenses" element={<ExpensesPage />} /> 
                 

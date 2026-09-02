@@ -6,7 +6,7 @@ interface ModalProps {
   onClose: () => void;
   title: string;
   children: ReactNode;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
 }
 
 export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 'md' }) => {
@@ -30,6 +30,8 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
     case 'md': sizeClasses = 'max-w-md'; break;
     case 'lg': sizeClasses = 'max-w-lg'; break;
     case 'xl': sizeClasses = 'max-w-xl'; break;
+    case '2xl': sizeClasses = 'max-w-2xl'; break;
+    case '3xl': sizeClasses = 'max-w-3xl'; break;
     default: sizeClasses = 'max-w-md';
   }
 

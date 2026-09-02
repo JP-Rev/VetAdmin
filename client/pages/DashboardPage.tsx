@@ -77,6 +77,56 @@ const KpiCard: React.FC<KpiCardProps> = ({ icon, label, value, unit, delta, spar
   </Link>
 );
 
+interface RankItem {
+  label: string;
+  value: string;
+  hint?: string;
+  /** 0..1 respecto del primero de la lista, para el largo de la barra. */
+  ratio: number;
+  warn?: boolean;
+}
+
+/** Ranking compacto con barra proporcional: reemplaza las listas con viñetas
+ *  que tenía la página de Estadísticas. */
+const RankCard: React.FC<{
+  title: string;
+  subtitle: string;
+  items: RankItem[];
+  emptyText: string;
+}> = ({ title, subtitle, items, emptyText }) => (
+  <section className="bg-surface border border-secondary-200 rounded-[18px] px-5 py-[18px]
+                      shadow-[0_1px_2px_rgba(15,31,29,0.04)] flex flex-col gap-3.5">
+    <div>
+      <h2 className="m-0 text-[16.5px] font-bold tracking-[-0.3px] text-secondary-900">{title}</h2>
+      <p className="mt-0.5 mb-0 text-[12.5px] text-secondary-500">{subtitle}</p>
+    </div>
+
+    {items.length > 0 ? (
+      <ul className="flex flex-col gap-3 m-0 p-0 list-none">
+        {items.map((it, i) => (
+          <li key={`${it.label}-${i}`} className="flex flex-col gap-1.5">
+            <div className="flex items-baseline justify-between gap-3">
+              <span className="text-[13px] font-medium text-secondary-800 truncate">{it.label}</span>
+              <span className="flex items-baseline gap-1.5 flex-shrink-0">
+                {it.hint && <span className="text-[11px] text-secondary-500">{it.hint}</span>}
+                <span className="font-mono text-[12px] font-semibold text-secondary-900">{it.value}</span>
+              </span>
+            </div>
+            <span className="h-1.5 rounded-full bg-secondary-100 block overflow-hidden">
+              <span
+                className={`block h-full rounded-full ${it.warn ? 'bg-[#fb923c]' : 'bg-primary-600'}`}
+                style={{ width: `${Math.max(4, Math.round(it.ratio * 100))}%` }}
+              />
+            </span>
+          </li>
+        ))}
+      </ul>
+    ) : (
+      <p className="m-0 py-6 text-center text-[13px] text-secondary-500">{emptyText}</p>
+    )}
+  </section>
+);
+
 const AgendaRow: React.FC<{ appointment: Turno }> = ({ appointment }) => {
   const { getClientById, getPetById } = useSupabaseData();
   const client = getClientById(appointment.cliente_id);
@@ -120,7 +170,10 @@ const AgendaRow: React.FC<{ appointment: Turno }> = ({ appointment }) => {
 };
 
 export const DashboardPage: React.FC = () => {
-  const { clients, pets, appointments, ventas, products, clinica, getDailyCashFlowReport } = useSupabaseData();
+  const {
+    clients, pets, appointments, ventas, products, clinica, expenses,
+    petSurgeries, surgeries, getDailyCashFlowReport,
+  } = useSupabaseData();
   const navigate = useNavigate();
 
   const today = todayISO();
@@ -163,6 +216,42 @@ export const DashboardPage: React.FC = () => {
       total: totals[i],
     }));
   }, [ventas]);
+
+  // Rankings acumulados: reemplazan a la pagina de Estadisticas, que mostraba
+  // lo mismo en listas largas y en una pantalla aparte.
+  const topProductos = React.useMemo(() => {
+    const acc: Record<string, { nombre: string; unidades: number; ingresos: number }> = {};
+    ventas.filter(v => v.estado !== EstadoVenta.CANCELADA).forEach(v => {
+      v.productos.forEach(item => {
+        const p = products.find(x => x.id_producto === item.producto_id);
+        if (!p) return;
+        acc[item.producto_id] ??= { nombre: p.nombre, unidades: 0, ingresos: 0 };
+        acc[item.producto_id].unidades += item.cantidad;
+        acc[item.producto_id].ingresos += item.cantidad * item.precio_unitario;
+      });
+    });
+    return Object.values(acc).sort((a, b) => b.ingresos - a.ingresos).slice(0, 5);
+  }, [ventas, products]);
+
+  const topCirugias = React.useMemo(() => {
+    const acc: Record<string, { nombre: string; cantidad: number }> = {};
+    petSurgeries.forEach(ps => {
+      const s = surgeries.find(x => x.id_cirugia === ps.cirugia_id);
+      if (!s) return;
+      acc[ps.cirugia_id] ??= { nombre: s.tipo, cantidad: 0 };
+      acc[ps.cirugia_id].cantidad++;
+    });
+    return Object.values(acc).sort((a, b) => b.cantidad - a.cantidad).slice(0, 5);
+  }, [petSurgeries, surgeries]);
+
+  const gastosPorCategoria = React.useMemo(() => {
+    const acc: Record<string, number> = {};
+    expenses.forEach(g => { acc[g.categoria] = (acc[g.categoria] ?? 0) + g.monto; });
+    return Object.entries(acc)
+      .map(([categoria, monto]) => ({ categoria, monto }))
+      .sort((a, b) => b.monto - a.monto)
+      .slice(0, 5);
+  }, [expenses]);
 
   const lowStock = React.useMemo(
     () => [...products].filter(p => p.stock <= 10).sort((a, b) => a.stock - b.stock).slice(0, 5),
@@ -312,11 +401,11 @@ export const DashboardPage: React.FC = () => {
           </div>
 
           <Link
-            to="/statistics"
+            to="/ventas"
             className="mt-auto flex items-center justify-center gap-2 bg-white/10 hover:bg-white/[0.16]
                        text-white border border-white/[0.12] rounded-[10px] py-2.5 text-[12.5px] font-bold transition-colors"
           >
-            <BarChart3 size={15} />Ver reporte completo
+            <BarChart3 size={15} />Ver detalle del día
           </Link>
         </section>
       </div>
@@ -382,6 +471,42 @@ export const DashboardPage: React.FC = () => {
             Reponer inventario <ArrowRight size={14} />
           </Link>
         </section>
+      </div>
+
+      {/* Acumulados historicos (antes vivian en la pagina Estadisticas) */}
+      <div className="grid gap-[18px] grid-cols-1 lg:grid-cols-3">
+        <RankCard
+          title="Productos más vendidos"
+          subtitle="Por ingresos acumulados"
+          items={topProductos.map(p => ({
+            label: p.nombre,
+            value: fmtMoney(p.ingresos),
+            hint: `${p.unidades} u.`,
+            ratio: topProductos[0].ingresos ? p.ingresos / topProductos[0].ingresos : 0,
+          }))}
+          emptyText="Todavía no hay ventas registradas."
+        />
+        <RankCard
+          title="Cirugías más frecuentes"
+          subtitle="Total histórico"
+          items={topCirugias.map(c => ({
+            label: c.nombre,
+            value: String(c.cantidad),
+            ratio: topCirugias[0].cantidad ? c.cantidad / topCirugias[0].cantidad : 0,
+          }))}
+          emptyText="Todavía no hay cirugías registradas."
+        />
+        <RankCard
+          title="Gastos por categoría"
+          subtitle="Total acumulado"
+          items={gastosPorCategoria.map(g => ({
+            label: g.categoria,
+            value: fmtMoney(g.monto),
+            ratio: gastosPorCategoria[0].monto ? g.monto / gastosPorCategoria[0].monto : 0,
+            warn: true,
+          }))}
+          emptyText="Todavía no hay gastos registrados."
+        />
       </div>
     </div>
   );

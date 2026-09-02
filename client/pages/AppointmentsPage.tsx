@@ -468,8 +468,8 @@ export const AppointmentsPage: React.FC = () => {
         <Modal 
             isOpen={isConsultationModalOpen} 
             onClose={handleConsultationClose} 
-            title={`Registrar Consulta para: ${getPetById(selectedAppointmentForConsultation.mascota_id)?.nombre}`} 
-            size="xl"
+            title="Atender turno"
+            size="3xl"
         >
           <ConsultationFormComponent 
             appointment={selectedAppointmentForConsultation} 
