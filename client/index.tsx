@@ -1,6 +1,7 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import './index.css'; // Tailwind + tokens de tema (procesado por PostCSS en el build)
 import AppWrapper from './App'; // Changed to AppWrapper
 
 const rootElement = document.getElementById('root');

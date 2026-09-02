@@ -22,6 +22,16 @@ export default defineConfig(({ mode }) => {
           }
         }
       },
+      // Mismo proxy para `vite preview`, así el build de producción se puede
+      // probar localmente contra el backend (en prod lo hace nginx).
+      preview: {
+        proxy: {
+          '/api': {
+            target: env.VITE_API_PROXY_TARGET || 'http://localhost:4000',
+            changeOrigin: true,
+          }
+        }
+      },
       plugins: [
         VitePWA({
           registerType: 'autoUpdate',

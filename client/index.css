@@ -1,7 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /*
   Color tokens as CSS custom properties (R G B triplets, consumed by Tailwind via
-  rgb(var(--x) / <alpha-value>) in index.html). Only the shades that need to look
-  different in dark mode are defined here — see index.html's tailwind.config for
+  rgb(var(--x) / <alpha-value>) in tailwind.config.js). Only the shades that need
+  to look different in dark mode are defined here — see tailwind.config.js for
   which shades of each color are themable vs. literal.
 */
 :root {
@@ -195,4 +199,151 @@
 
 .neon .user-email {
   color: rgb(236 72 153);
+}
+
+/* ---- Estilos globales (antes inline en index.html) ---- */
+
+body {
+  font-family: 'Manrope', Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+/* Custom scrollbar for webkit browsers */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f1f1; /* Light gray track */
+}
+::-webkit-scrollbar-thumb {
+  background: #0d9488; /* Primary color thumb */
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #0f766e; /* Darker primary on hover */
+}
+/* For Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #0d9488 #f1f1f1; /* thumb track */
+}
+
+/* Print specific styles for PDF generation and browser print */
+#print-root { 
+  display: none; /* Hidden by default */
+}
+
+.printable-area {
+  width: 210mm; /* A4 width */
+  min-height: 297mm; /* A4 height */
+  margin: 0 auto; /* Center horizontally */
+  padding: 20mm; /* A4 margins */
+  font-size: 11pt;
+  line-height: 1.4;
+  color: #000 !important;
+  background-color: #fff !important;
+  box-sizing: border-box;
+  font-family: 'Inter', Arial, sans-serif;
+  position: relative;
+  left: 0; /* Reset any left positioning */
+  right: 0; /* Reset any right positioning */
+}
+.printable-area * {
+    color: #000 !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+}
+.printable-area .no-print {
+    display: none !important;
+}
+.printable-area h1 {
+  font-size: 18pt;
+  font-weight: bold;
+  margin-bottom: 8pt;
+  text-align: center;
+}
+.printable-area h2 {
+  font-size: 16pt;
+  font-weight: bold;
+  margin-bottom: 6pt;
+  text-align: center;
+}
+.printable-area h3 {
+  font-size: 14pt;
+  font-weight: bold;
+  margin-bottom: 4pt;
+  margin-top: 12pt;
+}
+.printable-area p {
+  margin-bottom: 4pt;
+}
+.printable-area section {
+  margin-bottom: 16pt;
+  padding: 8pt;
+  border: 1pt solid #ccc;
+  border-radius: 4pt;
+}
+.printable-area .event-item {
+  padding-bottom: 8pt;
+  margin-bottom: 8pt;
+  border-bottom: 1pt solid #ddd;
+}
+.printable-area .event-item:last-child {
+  border-bottom: none;
+}
+
+/* Styles for when body.printing is active (used by html2canvas) */
+body.printing #print-root {
+  display: block !important; /* Make it visible for html2canvas */
+  position: fixed !important; /* Position it off-screen */
+  left: 0 !important; /* Center it properly */
+  top: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 9999 !important; /* Bring to front for capture */
+  background: white !important; /* Ensure canvas background is white */
+  overflow: visible !important;
+}
+body.printing #root {
+  display: none !important; /* Hide main app during capture */
+}
+body.printing .printable-area {
+  position: relative !important;
+  left: 0 !important;
+  top: 0 !important;
+  margin: 0 auto !important;
+  transform: none !important;
+}
+
+@media print {
+  body > #root {
+    display: none !important; 
+  }
+  #print-root {
+    display: block !important; 
+  }
+  .printable-area {
+      width: 210mm;
+      min-height: 297mm;
+      padding: 20mm;
+      margin: 0 auto;
+      box-sizing: border-box;
+      position: relative;
+      left: 0;
+      right: 0;
+  }
+  .printable-area table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+  }
+  .printable-area th, .printable-area td {
+    border: 1px solid #ccc; 
+    padding: 4px;
+    text-align: left;
+  }
+  .printable-area h1, .printable-area h2, .printable-area h3, .printable-area h4, .printable-area p {
+    margin-bottom: 0.3em;
+  }
 }
