@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useSupabaseData } from '../contexts/SupabaseDataContext';
 import { HistorialMedico, TipoEventoHistorial, AttachmentFile } from '../types';
 import { Button } from '../components/common/Button';
@@ -388,7 +388,19 @@ export const MedicalHistoryPage: React.FC = () => {
   const navigate = useNavigate();
   const { getPetById, getClientById, getMedicalHistoryByPetId, updateMedicalHistoryEvent, diseases, surgeries, petDiseases, petSurgeries, printContent, breeds, deleteAttachment, deleteMedicalHistoryEvent } = useSupabaseData();
   
+  const [searchParams, setSearchParams] = useSearchParams();
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Permite abrir el alta de evento desde otra pantalla (?action=new), por
+  // ejemplo desde "Agregar consulta" en la ficha del cliente.
+  useEffect(() => {
+    if (searchParams.get('action') === 'new') {
+      setIsModalOpen(true);
+      const next = new URLSearchParams(searchParams);
+      next.delete('action');
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<HistorialMedico | undefined>(undefined);
   const [deletingAttachment, setDeletingAttachment] = useState<{ att: AttachmentFile; eventId: string } | null>(null);

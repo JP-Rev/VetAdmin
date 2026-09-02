@@ -4,8 +4,55 @@ import { Raza, RazaForm, Enfermedad, EnfermedadForm, Cirugia, CirugiaForm, Espec
 import { Modal } from '../components/Modal';
 import { Button } from '../components/common/Button';
 import { FormField } from '../components/common/FormField';
-import { Plus, Edit3, Trash2, Settings as IconSettings, PawPrint, Thermometer, Scissors, Tags, Building2, Check } from 'lucide-react';
+import { Plus, Edit3, Trash2, Settings as IconSettings, PawPrint, Thermometer, Scissors, Tags, Building2, Check, Search, X } from 'lucide-react';
 import { ESPECIES } from '../constants';
+
+
+/** Encabezado de una pestaña: título, buscador y acción principal. */
+const TabHeader: React.FC<{
+  titulo: string;
+  total: number;
+  filtrado: number;
+  valor: string;
+  onFiltrar: (v: string) => void;
+  placeholder: string;
+  onNuevo: () => void;
+  nuevoLabel: string;
+  children?: React.ReactNode;
+}> = ({ titulo, total, filtrado, valor, onFiltrar, placeholder, onNuevo, nuevoLabel, children }) => (
+  <div className="flex flex-col gap-3.5 mb-4">
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h2 className="m-0 text-[20px] font-bold tracking-[-0.4px] text-secondary-900">{titulo}</h2>
+        <p className="mt-0.5 mb-0 text-[12.5px] text-secondary-500">
+          {filtrado === total ? `${total} registro(s)` : `${filtrado} de ${total} registro(s)`}
+        </p>
+      </div>
+      <Button onClick={onNuevo} leftIcon={<Plus />}>{nuevoLabel}</Button>
+    </div>
+
+    <div className="flex flex-wrap items-center gap-2.5">
+      <span className="flex items-center gap-2.5 bg-surface border border-secondary-200 rounded-[10px]
+                       px-3.5 py-2.5 text-secondary-500 focus-within:border-secondary-300 transition-colors
+                       flex-1 min-w-[220px] max-w-md">
+        <Search size={16} className="flex-shrink-0" />
+        <input
+          value={valor}
+          onChange={e => onFiltrar(e.target.value)}
+          placeholder={placeholder}
+          className="border-0 outline-none text-[13.5px] text-secondary-900 bg-transparent w-full placeholder:text-secondary-500"
+        />
+        {valor && (
+          <button type="button" onClick={() => onFiltrar('')} title="Limpiar" aria-label="Limpiar búsqueda"
+                  className="text-secondary-400 hover:text-secondary-700 flex-shrink-0">
+            <X size={14} />
+          </button>
+        )}
+      </span>
+      {children}
+    </div>
+  </div>
+);
 
 type TabKey = 'clinic' | 'breeds' | 'diseases' | 'surgeries' | 'productCategories';
 
@@ -349,10 +396,49 @@ export const SettingsPage: React.FC = () => {
   const [isProductCategoryModalOpen, setIsProductCategoryModalOpen] = useState(false);
   const [editingProductCategory, setEditingProductCategory] = useState<CategoriaProducto | undefined>(undefined);
 
-  const sortedBreeds = useMemo(() => [...breeds].sort((a, b) => a.nombre.localeCompare(b.nombre)), [breeds]);
-  const sortedDiseases = useMemo(() => [...diseases].sort((a, b) => a.nombre.localeCompare(b.nombre)), [diseases]);
-  const sortedSurgeries = useMemo(() => [...surgeries].sort((a, b) => a.tipo.localeCompare(b.tipo)), [surgeries]);
-  const sortedProductCategories = useMemo(() => [...productCategories].sort((a, b) => a.nombre.localeCompare(b.nombre)), [productCategories]);
+  // Un filtro por pestaña: estas listas crecen mucho (razas sobre todo) y sin
+  // buscador hay que recorrerlas a ojo.
+  const [filtroRazas, setFiltroRazas] = useState('');
+  const [filtroEspecie, setFiltroEspecie] = useState<string>('');
+  const [filtroEnfermedades, setFiltroEnfermedades] = useState('');
+  const [filtroCirugias, setFiltroCirugias] = useState('');
+  const [filtroCategorias, setFiltroCategorias] = useState('');
+
+  const contiene = (texto: string | undefined, q: string) =>
+    (texto ?? '').toLowerCase().includes(q.toLowerCase().trim());
+
+  const sortedBreeds = useMemo(
+    () => [...breeds]
+      .filter(b => (!filtroEspecie || b.especie === filtroEspecie) &&
+                   (!filtroRazas.trim() || contiene(b.nombre, filtroRazas)))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre)),
+    [breeds, filtroRazas, filtroEspecie]
+  );
+  const sortedDiseases = useMemo(
+    () => [...diseases]
+      .filter(d => !filtroEnfermedades.trim() ||
+                   contiene(d.nombre, filtroEnfermedades) ||
+                   contiene(d.descripcion, filtroEnfermedades) ||
+                   contiene(d.especie_afectada, filtroEnfermedades))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre)),
+    [diseases, filtroEnfermedades]
+  );
+  const sortedSurgeries = useMemo(
+    () => [...surgeries]
+      .filter(c => !filtroCirugias.trim() ||
+                   contiene(c.tipo, filtroCirugias) ||
+                   contiene(c.descripcion, filtroCirugias))
+      .sort((a, b) => a.tipo.localeCompare(b.tipo)),
+    [surgeries, filtroCirugias]
+  );
+  const sortedProductCategories = useMemo(
+    () => [...productCategories]
+      .filter(c => !filtroCategorias.trim() ||
+                   contiene(c.nombre, filtroCategorias) ||
+                   contiene(c.descripcion, filtroCategorias))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre)),
+    [productCategories, filtroCategorias]
+  );
 
   // Breed Modal Handlers
   const handleOpenBreedModal = (breed?: Raza) => { setEditingBreed(breed); setIsBreedModalOpen(true); };
@@ -385,10 +471,22 @@ export const SettingsPage: React.FC = () => {
       case 'breeds':
         return (
           <section>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-semibold text-secondary-700">Gestión de Razas</h2>
-              <Button onClick={() => handleOpenBreedModal()} leftIcon={<Plus />}>Nueva Raza</Button>
-            </div>
+            <TabHeader
+              titulo="Razas" total={breeds.length} filtrado={sortedBreeds.length}
+              valor={filtroRazas} onFiltrar={setFiltroRazas} placeholder="Buscar raza…"
+              onNuevo={() => handleOpenBreedModal()} nuevoLabel="Nueva Raza"
+            >
+              <select
+                value={filtroEspecie}
+                onChange={e => setFiltroEspecie(e.target.value)}
+                aria-label="Filtrar por especie"
+                className="bg-surface border border-secondary-200 rounded-[10px] px-3 py-2.5 text-[13.5px]
+                           text-secondary-900 outline-none focus:border-secondary-300 transition-colors"
+              >
+                <option value="">Todas las especies</option>
+                {ESPECIES.map(e => <option key={e} value={e}>{e}</option>)}
+              </select>
+            </TabHeader>
             <div className="bg-surface shadow-md rounded-lg overflow-x-auto">
               <table className="min-w-full divide-y divide-secondary-200">
                 <thead className="bg-secondary-50">
@@ -418,10 +516,11 @@ export const SettingsPage: React.FC = () => {
       case 'diseases':
         return (
           <section>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-semibold text-secondary-700">Gestión de Enfermedades</h2>
-              <Button onClick={() => handleOpenDiseaseModal()} leftIcon={<Plus />}>Nueva Enfermedad</Button>
-            </div>
+            <TabHeader
+              titulo="Enfermedades" total={diseases.length} filtrado={sortedDiseases.length}
+              valor={filtroEnfermedades} onFiltrar={setFiltroEnfermedades} placeholder="Buscar enfermedad…"
+              onNuevo={() => handleOpenDiseaseModal()} nuevoLabel="Nueva Enfermedad"
+            />
              <div className="bg-surface shadow-md rounded-lg overflow-x-auto">
               <table className="min-w-full divide-y divide-secondary-200">
                 <thead className="bg-secondary-50">
@@ -453,10 +552,11 @@ export const SettingsPage: React.FC = () => {
       case 'surgeries':
         return (
           <section>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-semibold text-secondary-700">Gestión de Tipos de Cirugía</h2>
-              <Button onClick={() => handleOpenSurgeryModal()} leftIcon={<Plus />}>Nuevo Tipo Cirugía</Button>
-            </div>
+            <TabHeader
+              titulo="Tipos de Cirugía" total={surgeries.length} filtrado={sortedSurgeries.length}
+              valor={filtroCirugias} onFiltrar={setFiltroCirugias} placeholder="Buscar cirugía…"
+              onNuevo={() => handleOpenSurgeryModal()} nuevoLabel="Nuevo Tipo de Cirugía"
+            />
              <div className="bg-surface shadow-md rounded-lg overflow-x-auto">
               <table className="min-w-full divide-y divide-secondary-200">
                 <thead className="bg-secondary-50">
@@ -490,10 +590,11 @@ export const SettingsPage: React.FC = () => {
       case 'productCategories':
         return (
           <section>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-semibold text-secondary-700">Gestión de Categorías de Productos</h2>
-              <Button onClick={() => handleOpenProductCategoryModal()} leftIcon={<Plus />}>Nueva Categoría</Button>
-            </div>
+            <TabHeader
+              titulo="Categorías de Productos" total={productCategories.length} filtrado={sortedProductCategories.length}
+              valor={filtroCategorias} onFiltrar={setFiltroCategorias} placeholder="Buscar categoría…"
+              onNuevo={() => handleOpenProductCategoryModal()} nuevoLabel="Nueva Categoría"
+            />
              <div className="bg-surface shadow-md rounded-lg overflow-x-auto">
               <table className="min-w-full divide-y divide-secondary-200">
                 <thead className="bg-secondary-50">

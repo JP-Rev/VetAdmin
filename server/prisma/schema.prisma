@@ -25,13 +25,24 @@ model Clinica {
 }
 
 model Cliente {
-  id        String    @id @default(cuid())
-  nombre    String
-  telefono  String
-  email     String?
+  id          String  @id @default(cuid())
+  nombre      String
+  telefono    String
+  telefonoAlt String?
+  email       String?
+
+  // Domicilio en campos separados. Todos opcionales.
+  calle     String?
+  numero    String?
+  localidad String?
+
+  // Campo libre anterior. Se conserva como respaldo de los datos ya cargados:
+  // el backfill de scripts/backfillDomicilio.js los pasa a calle/numero. Una vez
+  // verificada la migracion en el VPS se puede eliminar esta columna.
   domicilio String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   mascotas Mascota[]
   turnos   Turno[]

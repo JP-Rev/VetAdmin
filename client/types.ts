@@ -59,7 +59,13 @@ export interface Cliente {
   id_cliente: string;
   nombre: string;
   telefono: string;
+  /** Segundo telefono de contacto (opcional). */
+  telefono_alt: string;
   email: string;
+  calle: string;
+  numero: string;
+  localidad: string;
+  /** Texto libre anterior. Solo respaldo: los datos vivos van en calle/numero/localidad. */
   domicilio: string;
   createdAt?: string;
   lastModified: number;
@@ -243,7 +249,12 @@ export interface DailyCashFlowReportDetails {
   date: string; // YYYY-MM-DD
 }
 
-export type ClienteForm = Omit<Cliente, 'id_cliente' | 'lastModified'>;
+// Explicito y no derivado de Cliente: el formulario no carga `domicilio`
+// (texto libre legado, solo respaldo) ni `createdAt` (lo pone el servidor).
+export type ClienteForm = Pick<
+  Cliente,
+  'nombre' | 'telefono' | 'telefono_alt' | 'email' | 'calle' | 'numero' | 'localidad'
+>;
 export type MascotaForm = Omit<Mascota, 'id_mascota' | 'lastModified'>;
 export type TurnoForm = Omit<Turno, 'id_turno' | 'lastModified' | 'estado'>; 
 export type ProductoForm = Omit<Producto, 'id_producto' | 'lastModified'>;

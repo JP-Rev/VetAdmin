@@ -5,7 +5,13 @@ export const toCliente = (c) => ({
   id_cliente: c.id,
   nombre: c.nombre,
   telefono: c.telefono,
+  telefono_alt: c.telefonoAlt ?? '',
   email: c.email ?? '',
+  calle: c.calle ?? '',
+  numero: c.numero ?? '',
+  localidad: c.localidad ?? '',
+  // `domicilio` (texto libre) queda solo como respaldo de lo ya cargado; el
+  // frontend usa calle/numero/localidad.
   domicilio: c.domicilio ?? '',
   createdAt: dateOnly(c.createdAt),
   lastModified: epoch(c.updatedAt),
