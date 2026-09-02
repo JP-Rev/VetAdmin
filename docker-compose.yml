@@ -20,8 +20,11 @@ services:
       # que listarla a mano en vez de descubrirla sola. Migrarla requiere parar
       # el stack y copiar el archivo (ver vps/backups.md seccion 7).
       - sqlite_data:/data
-    ports:
-      - "${SERVER_PORT:-4010}:4000"
+    # Sin `ports`: la API no se publica al host. El cliente la alcanza por la
+    # red interna (nginx hace proxy_pass a http://server:4000), asi que exponerla
+    # afuera solo agregaria una puerta accesible por IP directa, salteando el
+    # proxy. Para depurar desde el VPS: `docker compose exec server ...` o
+    # `docker compose run --rm --service-ports server`.
     networks:
       - vetadmin_net
 
@@ -33,7 +36,9 @@ services:
     depends_on:
       - server
     ports:
-      - "${CLIENT_PORT:-3008}:80"
+      # Atado a 127.0.0.1: solo entra trafico por el proxy del host, no por la
+      # IP publica del VPS. Misma convencion que facturacion-web y kinetic.
+      - "127.0.0.1:${CLIENT_PORT:-3008}:80"
     networks:
       - vetadmin_net
 
