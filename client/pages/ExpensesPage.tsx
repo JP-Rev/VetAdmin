@@ -2,10 +2,11 @@ import React, { useState, useMemo } from 'react';
 import { useSupabaseData } from '../contexts/SupabaseDataContext';
 import { Gasto } from '../types';
 import { Modal } from '../components/Modal';
-import { Button } from '../components/common/Button';
-import { FormField } from '../components/common/FormField';
 import { ExpenseFormComponent } from '../components/forms/ExpenseFormComponent';
-import { Plus, Edit3, Trash2, CreditCard as CreditCardIcon, Calendar } from 'lucide-react';
+import { CreditCard as CreditCardIcon, Calendar } from 'lucide-react';
+import {
+  FilterCard, DataCard, TableWrap, Th, Td, Tr, RowActions, IconAction, EditIcon, DeleteIcon, EmptyState,
+} from '../components/common/ListLayout';
 
 export const ExpensesPage: React.FC = () => {
   const { expenses, deleteExpense } = useSupabaseData();
@@ -67,123 +68,109 @@ export const ExpensesPage: React.FC = () => {
     setSelectedDate('');
   };
 
+  const hayFiltro = searchTerm.trim().length > 0 || selectedDate !== '';
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-3xl font-bold text-secondary-800">Gestión de Gastos</h1>
-        <Button onClick={() => handleOpenModal()} leftIcon={<Plus />} size="md">
-          Nuevo Gasto
-        </Button>
+    <div className="flex flex-col gap-5">
+      <div>
+        <h1 className="m-0 text-[26px] font-extrabold tracking-[-0.6px] text-secondary-900">Gastos</h1>
+        <p className="mt-1 mb-0 text-sm text-secondary-600">Egresos de la clínica.</p>
       </div>
 
-      {/* Filters */}
-      <div className="bg-surface p-4 shadow rounded-lg space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            label=""
-            name="searchExpenses"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Buscar gastos por descripción o categoría..."
-            inputClassName="text-sm"
-            className="mb-0"
-          />
-          <div className="flex items-end space-x-2">
-            <FormField
-              label="Filtrar por fecha"
-              name="selectedDate"
+      <FilterCard
+        title="Filtros de gastos"
+        subtitle="Buscar por descripción o categoría, y filtrar por fecha"
+        value={searchTerm}
+        onChange={setSearchTerm}
+        placeholder="Buscar gasto…"
+      >
+        <div className="flex items-end gap-2 flex-shrink-0">
+          <label className="flex flex-col">
+            <span className="text-[12.5px] font-semibold text-secondary-700 mb-1.5">Fecha</span>
+            <input
               type="date"
               value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="mb-0 flex-grow"
+              onChange={e => setSelectedDate(e.target.value)}
+              className="bg-surface border border-secondary-200 rounded-[10px] px-3 py-2.5 text-[13.5px]
+                         text-secondary-900 outline-none focus:border-secondary-300 transition-colors"
             />
-            {selectedDate && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearDateFilter}
-                className="text-primary-600 hover:text-primary-700 h-10"
-              >
-                Limpiar
-              </Button>
-            )}
-          </div>
+          </label>
+          {selectedDate && (
+            <button
+              onClick={clearDateFilter}
+              className="h-[42px] px-3 rounded-[10px] border border-secondary-200 text-[12.5px] font-semibold
+                         text-secondary-600 hover:bg-secondary-100 transition-colors"
+            >
+              Limpiar
+            </button>
+          )}
         </div>
-        
-        {selectedDate && (
-          <div className="flex items-center justify-between p-3 bg-error-50 border border-error-200 rounded-md">
-            <div className="flex items-center">
-              <Calendar className="h-5 w-5 text-error-600 mr-2" />
-              <span className="text-sm text-error-700">
-                Gastos para {formatDateForDisplay(selectedDate)}: {filteredExpenses.filter(e => e.fecha === selectedDate).length} gasto(s)
-              </span>
-            </div>
-            <div className="text-right">
-              <span className="text-lg font-bold text-error-800">
-                Total: ${dailyTotal.toFixed(2)}
-              </span>
-            </div>
-          </div>
+      </FilterCard>
+
+      {selectedDate && (
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 bg-warning-50 border border-warning-200 rounded-[12px]">
+          <span className="flex items-center gap-2 text-[13px] text-warning-800">
+            <Calendar size={16} />
+            {formatDateForDisplay(selectedDate)}: {filteredExpenses.filter(e => e.fecha === selectedDate).length} gasto(s)
+          </span>
+          <strong className="font-mono text-[15px] text-warning-800">Total: ${dailyTotal.toFixed(2)}</strong>
+        </div>
+      )}
+
+      <DataCard
+        title="Gastos"
+        count={filteredExpenses.length}
+        filtered={hayFiltro}
+        actionLabel="Nuevo"
+        onAction={() => handleOpenModal()}
+      >
+        {filteredExpenses.length > 0 ? (
+          <TableWrap>
+            <thead>
+              <tr>
+                <Th>Fecha</Th>
+                <Th>Descripción</Th>
+                <Th>Categoría</Th>
+                <Th>Monto</Th>
+                <Th className="text-right">Acciones</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredExpenses.map(expense => (
+                <Tr key={expense.id_gasto}>
+                  <Td className="font-mono text-[12.5px] whitespace-nowrap">
+                    {new Date(expense.fecha + 'T00:00:00').toLocaleDateString('es-AR')}
+                  </Td>
+                  <Td className="font-medium text-secondary-900 max-w-md truncate" >{expense.descripcion}</Td>
+                  <Td className="text-secondary-600">{expense.categoria}</Td>
+                  <Td className="font-mono text-[12.5px] font-semibold">${expense.monto.toFixed(2)}</Td>
+                  <Td>
+                    <RowActions>
+                      <IconAction label="Editar gasto" onClick={() => handleOpenModal(expense)}>
+                        <EditIcon />
+                      </IconAction>
+                      <IconAction label="Eliminar gasto" variant="danger" onClick={() => handleDeleteExpense(expense.id_gasto)}>
+                        <DeleteIcon />
+                      </IconAction>
+                    </RowActions>
+                  </Td>
+                </Tr>
+              ))}
+            </tbody>
+          </TableWrap>
+        ) : (
+          <EmptyState
+            icon={<CreditCardIcon size={24} />}
+            title={hayFiltro ? 'Sin resultados' : 'No hay gastos'}
+            hint={hayFiltro ? 'Probá con otros filtros.' : 'Registrá tu primer gasto con el botón Nuevo.'}
+          />
         )}
-      </div>
+      </DataCard>
 
       {isModalOpen && (
         <Modal isOpen={isModalOpen} onClose={handleCloseModal} title={editingExpense ? 'Editar Gasto' : 'Nuevo Gasto'}>
           <ExpenseFormComponent initialData={editingExpense} onSave={handleSaveExpense} onClose={handleCloseModal} />
         </Modal>
-      )}
-
-      <div className="bg-surface shadow-lg rounded-lg overflow-x-auto">
-        <table className="min-w-full divide-y divide-secondary-200">
-          <thead className="bg-secondary-50">
-            <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Fecha</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Descripción</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Monto</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Categoría</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Acciones</th>
-            </tr>
-          </thead>
-          <tbody className="bg-surface divide-y divide-secondary-200">
-            {filteredExpenses.length > 0 ? filteredExpenses.map(expense => (
-              <tr key={expense.id_gasto} className="hover:bg-secondary-50 transition-colors">
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-700">{new Date(expense.fecha + 'T00:00:00').toLocaleDateString()}</td>
-                <td className="px-6 py-4 text-sm text-secondary-900 max-w-md truncate" title={expense.descripcion}>{expense.descripcion}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-700 font-medium">${expense.monto.toFixed(2)}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-600">{expense.categoria}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <div className="flex items-center space-x-1">
-                    <Button size="sm" variant="ghost" onClick={() => handleOpenModal(expense)} title="Editar Gasto" className="text-accent-600 hover:bg-accent-50 p-1.5">
-                      <Edit3 className="h-4 w-4" />
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => handleDeleteExpense(expense.id_gasto)} title="Eliminar Gasto" className="text-error-600 hover:bg-error-50 p-1.5">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </td>
-              </tr>
-            )) : (
-              <tr>
-                <td colSpan={5} className="px-6 py-10 text-center text-secondary-500">
-                  <CreditCardIcon className="mx-auto h-10 w-10 text-secondary-400 mb-2" />
-                  {searchTerm || selectedDate 
-                    ? "No hay gastos que coincidan con los filtros aplicados." 
-                    : "No hay gastos registrados."}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {!selectedDate && filteredExpenses.length > 0 && (
-        <div className="bg-surface p-4 rounded-lg shadow-md">
-          <div className="text-center">
-            <p className="text-sm text-secondary-600">
-              Total de gastos mostrados: <span className="font-semibold text-secondary-800">${filteredExpenses.reduce((sum, expense) => sum + expense.monto, 0).toFixed(2)}</span>
-            </p>
-          </div>
-        </div>
       )}
     </div>
   );

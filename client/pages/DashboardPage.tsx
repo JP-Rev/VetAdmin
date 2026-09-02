@@ -4,8 +4,9 @@ import { useSupabaseData } from '../contexts/SupabaseDataContext';
 import { Turno, EstadoVenta, EstadoTurno } from '../types';
 import {
   CalendarDays, Users, PawPrint, ShoppingCart, ArrowUpRight, ArrowRight,
-  CalendarCheck, ChevronRight, TrendingUp, TrendingDown, Calendar, BarChart3, Stethoscope,
+  CalendarCheck, ChevronRight, TrendingUp, TrendingDown, Calendar, BarChart3,
 } from 'lucide-react';
+import { SpeciesIcon } from '../lib/speciesIcon';
 
 const todayISO = () => new Date().toISOString().split('T')[0];
 
@@ -94,7 +95,7 @@ const AgendaRow: React.FC<{ appointment: Turno }> = ({ appointment }) => {
         {appointment.hora}
       </span>
       <span className="w-9 h-9 rounded-xl bg-secondary-100 text-secondary-600 flex items-center justify-center flex-shrink-0">
-        <Stethoscope size={17} />
+        <SpeciesIcon especie={pet?.especie} size={17} />
       </span>
       <span className="flex-1 min-w-0 flex flex-col gap-0.5">
         <strong className="text-[13.5px] font-bold text-secondary-900 truncate">{appointment.motivo}</strong>

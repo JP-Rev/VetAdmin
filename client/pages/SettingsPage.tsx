@@ -4,7 +4,7 @@ import { Raza, RazaForm, Enfermedad, EnfermedadForm, Cirugia, CirugiaForm, Espec
 import { Modal } from '../components/Modal';
 import { Button } from '../components/common/Button';
 import { FormField } from '../components/common/FormField';
-import { Plus, Edit3, Trash2, Settings as IconSettings, PawPrint, Bug, Activity, Package, Building2, Check } from 'lucide-react';
+import { Plus, Edit3, Trash2, Settings as IconSettings, PawPrint, Thermometer, Scissors, Tags, Building2, Check } from 'lucide-react';
 import { ESPECIES } from '../constants';
 
 type TabKey = 'clinic' | 'breeds' | 'diseases' | 'surgeries' | 'productCategories';
@@ -533,9 +533,9 @@ export const SettingsPage: React.FC = () => {
   const tabs = [
     { key: 'clinic', label: 'Clínica', icon: <Building2 size={18} /> },
     { key: 'breeds', label: 'Razas', icon: <PawPrint size={18} /> },
-    { key: 'diseases', label: 'Enfermedades', icon: <Bug size={18} /> },
-    { key: 'surgeries', label: 'Tipos de Cirugía', icon: <Activity size={18} /> },
-    { key: 'productCategories', label: 'Categorías de Productos', icon: <Package size={18} /> },
+    { key: 'diseases', label: 'Enfermedades', icon: <Thermometer size={18} /> },
+    { key: 'surgeries', label: 'Tipos de Cirugía', icon: <Scissors size={18} /> },
+    { key: 'productCategories', label: 'Categorías de Productos', icon: <Tags size={18} /> },
   ];
 
   return (

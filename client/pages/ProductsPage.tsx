@@ -4,7 +4,10 @@ import { Producto, ProductoForm } from '../types';
 import { Modal } from '../components/Modal';
 import { Button } from '../components/common/Button';
 import { FormField } from '../components/common/FormField';
-import { Plus, Edit3, Trash2, Package, AlertTriangle } from 'lucide-react';
+import { Package, AlertTriangle } from 'lucide-react';
+import {
+  FilterCard, DataCard, TableWrap, Th, Td, Tr, RowActions, IconAction, EditIcon, DeleteIcon, EmptyState,
+} from '../components/common/ListLayout';
 
 // Product Form Component
 interface ProductFormProps {
@@ -112,7 +115,7 @@ const ProductFormComponent: React.FC<ProductFormProps> = ({ initialData, onSave,
 
 // Main Products Page
 export const ProductsPage: React.FC = () => {
-  const { products, deleteProduct, productCategories, getProductCategoryById } = useSupabaseData();
+  const { products, deleteProduct, getProductCategoryById } = useSupabaseData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Producto | undefined>(undefined);
   const [searchTerm, setSearchTerm] = useState('');
@@ -150,100 +153,88 @@ export const ProductsPage: React.FC = () => {
   const warningStockThreshold = 10;
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-secondary-800">Gestión de Productos</h1>
-        <Button onClick={() => handleOpenModal()} leftIcon={<Plus />}>
-          Nuevo Producto
-        </Button>
+    <div className="flex flex-col gap-5">
+      <div>
+        <h1 className="m-0 text-[26px] font-extrabold tracking-[-0.6px] text-secondary-900">Productos</h1>
+        <p className="mt-1 mb-0 text-sm text-secondary-600">Inventario y precios.</p>
       </div>
 
-       <div className="bg-surface p-4 shadow rounded-lg">
-        <FormField
-            label=""
-            name="searchProducts"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Buscar productos por nombre o categoría..."
-            inputClassName="text-sm"
-            className="mb-0"
-        />
-      </div>
+      <FilterCard
+        title="Filtros de productos"
+        subtitle="Buscar por nombre o categoría"
+        value={searchTerm}
+        onChange={setSearchTerm}
+        placeholder="Buscar producto…"
+      />
+
+      <DataCard
+        title="Productos"
+        count={filteredProducts.length}
+        filtered={searchTerm.trim().length > 0}
+        actionLabel="Nuevo"
+        onAction={() => handleOpenModal()}
+      >
+        {filteredProducts.length > 0 ? (
+          <TableWrap>
+            <thead>
+              <tr>
+                <Th>Producto</Th>
+                <Th>Categoría</Th>
+                <Th>Stock</Th>
+                <Th>Precio</Th>
+                <Th className="text-right">Acciones</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredProducts.map(product => {
+                let stockClass = 'text-success-700';
+                if (product.stock <= lowStockThreshold) stockClass = 'text-error-600 font-semibold';
+                else if (product.stock <= warningStockThreshold) stockClass = 'text-warning-700 font-semibold';
+
+                const categoryName = product.categoria_id
+                  ? getProductCategoryById(product.categoria_id)?.nombre || product.categoria
+                  : product.categoria;
+
+                return (
+                  <Tr key={product.id_producto}>
+                    <Td className="font-semibold text-secondary-900">{product.nombre}</Td>
+                    <Td className="text-secondary-600">{categoryName || '—'}</Td>
+                    <Td>
+                      <span className={`inline-flex items-center gap-1.5 font-mono text-[12.5px] ${stockClass}`}>
+                        {product.stock <= warningStockThreshold && <AlertTriangle size={13} />}
+                        {product.stock} u.
+                      </span>
+                    </Td>
+                    <Td className="font-mono text-[12.5px]">${product.precio.toFixed(2)}</Td>
+                    <Td>
+                      <RowActions>
+                        <IconAction label="Editar producto" onClick={() => handleOpenModal(product)}>
+                          <EditIcon />
+                        </IconAction>
+                        <IconAction label="Eliminar producto" variant="danger" onClick={() => handleDeleteProduct(product.id_producto)}>
+                          <DeleteIcon />
+                        </IconAction>
+                      </RowActions>
+                    </Td>
+                  </Tr>
+                );
+              })}
+            </tbody>
+          </TableWrap>
+        ) : (
+          <EmptyState
+            icon={<Package size={24} />}
+            title={searchTerm ? 'Sin resultados' : 'No hay productos'}
+            hint={searchTerm ? 'Probá con otros términos de búsqueda.' : 'Agregá tu primer producto con el botón Nuevo.'}
+          />
+        )}
+      </DataCard>
 
       {isModalOpen && (
         <Modal isOpen={isModalOpen} onClose={handleCloseModal} title={editingProduct ? 'Editar Producto' : 'Nuevo Producto'}>
           <ProductFormComponent initialData={editingProduct} onSave={handleSaveProduct} onClose={handleCloseModal} />
         </Modal>
       )}
-
-      <div className="bg-surface shadow-lg rounded-lg overflow-x-auto">
-        <table className="min-w-full divide-y divide-secondary-200">
-          <thead className="bg-secondary-50">
-            <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Nombre</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Categoría</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Stock</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Precio</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Acciones</th>
-            </tr>
-          </thead>
-          <tbody className="bg-surface divide-y divide-secondary-200">
-            {filteredProducts.length > 0 ? filteredProducts.map(product => {
-              let stockColorClass = 'text-success-700';
-              if (product.stock <= lowStockThreshold) {
-                stockColorClass = 'text-error-700 font-semibold';
-              } else if (product.stock <= warningStockThreshold) {
-                stockColorClass = 'text-warning-700 font-semibold';
-              }
-
-              const categoryName = product.categoria_id 
-                ? getProductCategoryById(product.categoria_id)?.nombre || product.categoria
-                : product.categoria;
-
-              return (
-              <tr key={product.id_producto} className="hover:bg-secondary-50 transition-colors">
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-secondary-900">{product.nombre}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-500">{categoryName}</td>
-                <td className={`px-6 py-4 whitespace-nowrap text-sm ${stockColorClass}`}>
-                    {product.stock} unidades
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-500">${product.precio.toFixed(2)}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <div className="flex items-center space-x-1">
-                    <Button size="sm" variant="ghost" onClick={() => handleOpenModal(product)} title="Editar Producto" className="text-accent-600 hover:bg-accent-50 p-1.5">
-                      <Edit3 className="h-4 w-4" />
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => handleDeleteProduct(product.id_producto)} title="Eliminar Producto" className="text-error-600 hover:bg-error-50 p-1.5">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </td>
-              </tr>
-            );
-          }) : (
-              <tr>
-                <td colSpan={5} className="px-6 py-10 text-center text-secondary-500">
-                    <Package className="mx-auto h-10 w-10 text-secondary-400 mb-2" />
-                    No hay productos registrados o que coincidan con la búsqueda.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-       {filteredProducts.some(p => p.stock <= lowStockThreshold) && 
-        <div className="mt-4 p-3 bg-error-50 border-l-4 border-error-400 text-error-700 rounded-md flex items-center">
-            <AlertTriangle className="h-5 w-5 mr-2 flex-shrink-0"/>
-            <p><span className="font-bold">Alerta de Stock Bajo:</span> Algunos productos tienen stock crítico (≤ {lowStockThreshold} unidades).</p>
-        </div>
-      }
-       {filteredProducts.some(p => p.stock > lowStockThreshold && p.stock <= warningStockThreshold) && 
-        !filteredProducts.some(p => p.stock <= lowStockThreshold) && 
-        <div className="mt-4 p-3 bg-warning-50 border-l-4 border-warning-400 text-warning-700 rounded-md flex items-center">
-            <AlertTriangle className="h-5 w-5 mr-2 flex-shrink-0"/>
-            <p><span className="font-bold">Advertencia de Stock:</span> Algunos productos tienen stock moderado (entre {lowStockThreshold + 1} y {warningStockThreshold} unidades).</p>
-        </div>
-      }
     </div>
   );
 };

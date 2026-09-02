@@ -1,9 +1,10 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useSupabaseData } from '../contexts/SupabaseDataContext';
+import { EstadoTurno } from '../types';
 import {
   LayoutDashboard, Users, CalendarDays, ShoppingCart, Package, X as IconClose,
-  PawPrint, BarChart3, Settings as IconSettings, CreditCard, Dog, ArrowRight,
+  PawPrint, BarChart3, Settings as IconSettings, CreditCard, ArrowRight,
 } from 'lucide-react';
 
 interface NavItemProps {
@@ -57,8 +58,11 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
-  const { clinica, getUpcomingAppointments } = useSupabaseData();
-  const turnosCount = getUpcomingAppointments().length;
+  const { clinica, appointments } = useSupabaseData();
+  // El badge cuenta los turnos pendientes de HOY (accionable), no todos los
+  // futuros: ese número crece sin techo y deja de significar algo.
+  const hoy = new Date().toISOString().split('T')[0];
+  const turnosCount = appointments.filter(a => a.fecha === hoy && a.estado === EstadoTurno.PENDIENTE).length;
 
   const handleMobileLinkClick = () => {
     if (window.innerWidth < 768) toggleSidebar();
@@ -100,7 +104,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
         <NavSection label="General">
           <NavItem to="/" icon={<LayoutDashboard size={17} />} onClick={handleMobileLinkClick}>Dashboard</NavItem>
           <NavItem to="/clients" icon={<Users size={17} />} onClick={handleMobileLinkClick}>Clientes</NavItem>
-          <NavItem to="/pets" icon={<Dog size={17} />} onClick={handleMobileLinkClick}>Mascotas</NavItem>
+          <NavItem to="/pets" icon={<PawPrint size={17} />} onClick={handleMobileLinkClick}>Mascotas</NavItem>
           <NavItem to="/appointments" icon={<CalendarDays size={17} />} badge={turnosCount} onClick={handleMobileLinkClick}>Turnos</NavItem>
         </NavSection>
 

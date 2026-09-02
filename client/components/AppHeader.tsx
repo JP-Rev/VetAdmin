@@ -1,7 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserMenu } from './UserMenu';
-import { Menu as IconMenu, Search, Plus } from 'lucide-react';
+import { GlobalSearch } from './GlobalSearch';
+import { Menu as IconMenu, Plus } from 'lucide-react';
 
 interface AppHeaderProps {
   toggleSidebar: () => void;
@@ -10,26 +11,6 @@ interface AppHeaderProps {
 
 export const AppHeader: React.FC<AppHeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
   const navigate = useNavigate();
-  const searchRef = React.useRef<HTMLInputElement>(null);
-  const [query, setQuery] = React.useState('');
-
-  // ⌘K / Ctrl+K enfoca el buscador
-  React.useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        searchRef.current?.focus();
-      }
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, []);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    const q = query.trim();
-    if (q) navigate(`/clients?q=${encodeURIComponent(q)}`);
-  };
 
   return (
     <header className="sticky top-0 z-30 bg-surface/[0.86] backdrop-blur-[10px] border-b border-secondary-200 px-4 sm:px-8 py-3.5 flex items-center gap-3 sm:gap-5">
@@ -43,23 +24,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ toggleSidebar, isSidebarOp
         <IconMenu className="h-5 w-5" />
       </button>
 
-      <form
-        onSubmit={handleSearch}
-        className="flex-1 min-w-0 hidden sm:flex items-center gap-3 max-w-[380px] bg-surface border border-secondary-200 rounded-[11px] px-3.5 py-2.5 text-secondary-500 focus-within:border-secondary-300 transition-colors"
-      >
-        <Search size={16} className="flex-shrink-0" />
-        <input
-          ref={searchRef}
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          placeholder="Buscar cliente, mascota o venta…"
-          aria-label="Buscar"
-          className="border-0 outline-none text-[13.5px] text-secondary-900 bg-transparent w-full placeholder:text-secondary-500"
-        />
-        <span className="font-mono text-[10px] text-secondary-400 border border-secondary-200 rounded px-1.5 py-px flex-shrink-0 hidden md:inline">
-          ⌘K
-        </span>
-      </form>
+      <GlobalSearch />
 
       <div className="flex items-center gap-2.5 ml-auto">
         <button

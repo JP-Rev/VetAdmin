@@ -5,8 +5,12 @@ import { Cliente, Mascota, ClienteForm, MascotaForm, Especie, SexoMascota } from
 import { Modal } from '../components/Modal';
 import { Button } from '../components/common/Button';
 import { FormField } from '../components/common/FormField';
-import { Plus, Edit3, Trash2, PawPrint, Users, CalendarDays, ChevronDown, FileText } from 'lucide-react';
-import { RAZAS_PREDEFINIDAS, ESPECIES } from '../constants';
+import { PawPrint, Users, CalendarDays, ChevronDown, FileText } from 'lucide-react';
+import { ESPECIES } from '../constants';
+import { SpeciesIcon } from '../lib/speciesIcon';
+import {
+  FilterCard, DataCard, TableWrap, Th, Td, Tr, RowActions, IconAction, EditIcon, DeleteIcon, EmptyState,
+} from '../components/common/ListLayout';
 
 // Client Form Component
 interface ClientFormProps {
@@ -243,40 +247,141 @@ export const ClientsPage: React.FC = () => {
     }
   };
   
-  const animationStyle = {
-    maxHeight: '1000px',
-    overflow: 'hidden',
-    transition: 'max-height 0.5s ease-in-out, padding-top 0.5s ease-in-out, padding-bottom 0.5s ease-in-out, opacity 0.5s ease-in-out',
-  };
-  const collapsedStyle = {
-    maxHeight: '0',
-    paddingTop: '0',
-    paddingBottom: '0',
-    opacity: 0,
-  };
-
-
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-secondary-800">Gestión de Clientes</h1>
-        <Button onClick={() => handleOpenClientModal()} leftIcon={<Plus />}>
-          Nuevo Cliente
-        </Button>
+    <div className="flex flex-col gap-5">
+      <div>
+        <h1 className="m-0 text-[26px] font-extrabold tracking-[-0.6px] text-secondary-900">Clientes</h1>
+        <p className="mt-1 mb-0 text-sm text-secondary-600">Fichas de clientes y sus mascotas.</p>
       </div>
 
-      <div className="bg-surface p-4 shadow rounded-lg">
-        <FormField
-          label=""
-          name="searchClient"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Buscar clientes por nombre, email o teléfono..."
-          inputClassName="text-sm"
-          className="mb-0" // remove bottom margin from FormField wrapper
-        />
-      </div>
+      <FilterCard
+        title="Filtros de clientes"
+        subtitle="Buscar por nombre, email o teléfono"
+        value={searchTerm}
+        onChange={setSearchTerm}
+        placeholder="Buscar cliente…"
+      />
 
+      <DataCard
+        title="Clientes"
+        count={filteredClients.length}
+        filtered={searchTerm.trim().length > 0}
+        actionLabel="Nuevo"
+        onAction={() => handleOpenClientModal()}
+      >
+        {filteredClients.length > 0 ? (
+          <TableWrap>
+            <thead>
+              <tr>
+                <Th>Cliente</Th>
+                <Th>Teléfono</Th>
+                <Th>Email</Th>
+                <Th>Mascotas</Th>
+                <Th className="text-right">Acciones</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredClients.map(client => {
+                const clientPets = getPetsByClientId(client.id_cliente);
+                const isExpanded = expandedClientId === client.id_cliente;
+                return (
+                  <React.Fragment key={client.id_cliente}>
+                    <Tr onClick={() => toggleExpandClient(client.id_cliente)}>
+                      <Td>
+                        <span className="flex items-center gap-2">
+                          <ChevronDown
+                            size={15}
+                            className={`text-secondary-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                          />
+                          <span className="font-semibold text-secondary-900">{client.nombre}</span>
+                        </span>
+                      </Td>
+                      <Td className="font-mono text-[12.5px]">{client.telefono || '—'}</Td>
+                      <Td className="text-secondary-600">{client.email || '—'}</Td>
+                      <Td>
+                        <span className="font-mono text-[11.5px] font-semibold bg-primary-50 text-primary-700 px-2 py-1 rounded-full">
+                          {clientPets.length}
+                        </span>
+                      </Td>
+                      <Td>
+                        <RowActions>
+                          <IconAction label="Agregar mascota" onClick={() => handleOpenPetModal(client.id_cliente)}>
+                            <PawPrint size={15} />
+                          </IconAction>
+                          <IconAction label="Editar cliente" onClick={() => handleOpenClientModal(client)}>
+                            <EditIcon />
+                          </IconAction>
+                          <IconAction label="Eliminar cliente" variant="danger" onClick={() => handleDeleteClient(client.id_cliente)}>
+                            <DeleteIcon />
+                          </IconAction>
+                        </RowActions>
+                      </Td>
+                    </Tr>
+
+                    {isExpanded && (
+                      <tr className="border-b border-secondary-100">
+                        <td colSpan={5} className="px-5 py-4 bg-secondary-50">
+                          {clientPets.length > 0 ? (
+                            <ul className="flex flex-col gap-2 m-0 p-0 list-none">
+                              {clientPets.map(pet => {
+                                const breed = breeds.find(b => b.id_raza === pet.raza_id);
+                                const historyCount = getMedicalHistoryByPetId(pet.id_mascota).length;
+                                return (
+                                  <li
+                                    key={pet.id_mascota}
+                                    className="flex flex-wrap items-center gap-3 bg-surface border border-secondary-200 rounded-[10px] px-3.5 py-2.5"
+                                  >
+                                    <span className="w-8 h-8 rounded-lg bg-secondary-100 text-secondary-600 flex items-center justify-center flex-shrink-0">
+                                      <SpeciesIcon especie={pet.especie} size={16} />
+                                    </span>
+                                    <span className="flex-1 min-w-0 flex flex-col">
+                                      <span className="text-[13px] font-semibold text-secondary-900 truncate">{pet.nombre}</span>
+                                      <span className="text-[11.5px] text-secondary-500 truncate">
+                                        {pet.especie} · {breed?.nombre || 'Raza desconocida'} · {pet.sexo}
+                                      </span>
+                                    </span>
+                                    <RowActions>
+                                      <Link to={`/pets/${pet.id_mascota}/history`} title={`Historial médico (${historyCount})`}>
+                                        <span className="w-[34px] h-[34px] rounded-[9px] border border-secondary-200 text-secondary-600
+                                                         hover:bg-secondary-100 hover:text-secondary-900 flex items-center justify-center transition-colors">
+                                          <FileText size={15} />
+                                        </span>
+                                      </Link>
+                                      <Link to={`/appointments?action=new&clientId=${client.id_cliente}&petId=${pet.id_mascota}`} title="Nuevo turno">
+                                        <span className="w-[34px] h-[34px] rounded-[9px] border border-secondary-200 text-secondary-600
+                                                         hover:bg-secondary-100 hover:text-secondary-900 flex items-center justify-center transition-colors">
+                                          <CalendarDays size={15} />
+                                        </span>
+                                      </Link>
+                                      <IconAction label="Editar mascota" onClick={() => handleOpenPetModal(client.id_cliente, pet)}>
+                                        <EditIcon />
+                                      </IconAction>
+                                    </RowActions>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          ) : (
+                            <p className="m-0 text-[13px] text-secondary-500">
+                              Este cliente todavía no tiene mascotas registradas.
+                            </p>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </tbody>
+          </TableWrap>
+        ) : (
+          <EmptyState
+            icon={<Users size={24} />}
+            title={searchTerm ? 'Sin resultados' : 'No hay clientes'}
+            hint={searchTerm ? 'Probá con otros términos de búsqueda.' : 'Empezá agregando un cliente con el botón Nuevo.'}
+          />
+        )}
+      </DataCard>
 
       {isClientModalOpen && (
         <Modal isOpen={isClientModalOpen} onClose={handleCloseClientModal} title={editingClient ? 'Editar Cliente' : 'Nuevo Cliente'}>
@@ -289,83 +394,6 @@ export const ClientsPage: React.FC = () => {
           <PetFormComponent clientId={selectedClientIdForPet} initialData={editingPet} onSave={handlePetSaved} onClose={handleClosePetModal} />
         </Modal>
       )}
-
-      <div className="space-y-4">
-        {filteredClients.length > 0 ? filteredClients.map(client => {
-          const clientPets = getPetsByClientId(client.id_cliente);
-          const isExpanded = expandedClientId === client.id_cliente;
-          return (
-            <div key={client.id_cliente} className="bg-surface shadow-lg rounded-lg overflow-hidden">
-              <div className="p-4 sm:p-5 cursor-pointer hover:bg-secondary-50 transition-colors duration-150" onClick={() => toggleExpandClient(client.id_cliente)}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-xl font-semibold text-primary-700">{client.nombre}</h2>
-                    <p className="text-sm text-secondary-600">{client.email || 'Sin email'} - {client.telefono}</p>
-                    <p className="text-xs text-secondary-500">ID: {client.id_cliente.substring(0,8)}</p>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                     <span className="text-sm text-secondary-500 mr-2">{clientPets.length} mascota(s)</span>
-                    <ChevronDown className={`h-6 w-6 text-secondary-500 transform transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
-                  </div>
-                </div>
-              </div>
-
-              <div style={isExpanded ? animationStyle : {...animationStyle, ...collapsedStyle}}>
-                <div className="border-t border-secondary-200 p-4 sm:p-5 bg-secondary-50 space-y-4">
-                  <div className="flex flex-wrap gap-2 mb-3">
-                      <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); handleOpenClientModal(client);}} leftIcon={<Edit3 />}>Editar Cliente</Button>
-                      <Button size="sm" variant="danger" onClick={(e) => { e.stopPropagation(); handleDeleteClient(client.id_cliente);}} leftIcon={<Trash2 />}>Eliminar Cliente</Button>
-                      <Button size="sm" variant="primary" onClick={(e) => { e.stopPropagation(); handleOpenPetModal(client.id_cliente);}} leftIcon={<PawPrint />}>Agregar Mascota</Button>
-                  </div>
-                  
-                  <h3 className="text-md font-semibold text-secondary-700">Mascotas de {client.nombre}:</h3>
-                  {clientPets.length > 0 ? (
-                    <ul className="space-y-3">
-                      {clientPets.map(pet => {
-                        const breed = breeds.find(b => b.id_raza === pet.raza_id);
-                        const petHistoryCount = getMedicalHistoryByPetId(pet.id_mascota).length;
-                        return (
-                          <li key={pet.id_mascota} className="p-3 bg-surface rounded-md shadow flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                            <div>
-                              <p className="font-medium text-primary-600">{pet.nombre} <span className="text-xs text-secondary-500">({pet.especie} - {breed?.nombre || 'Raza Desconocida'})</span></p>
-                              <p className="text-sm text-secondary-500">Nac: {new Date(pet.fecha_nacimiento).toLocaleDateString()} - Sexo: {pet.sexo}</p>
-                            </div>
-                            <div className="flex items-center space-x-1 sm:space-x-2 mt-2 sm:mt-0 flex-wrap">
-                                <Link to={`/pets/${pet.id_mascota}/history`} title="Ver Historial Médico">
-                                    <Button size="sm" variant="ghost" className="p-1.5 text-blue-600 hover:bg-blue-50">
-                                      <FileText className="h-5 w-5"/>
-                                      <span className="ml-1 text-xs">({petHistoryCount})</span>
-                                    </Button>
-                                </Link>
-                                <Button size="sm" variant="ghost" className="p-1.5 text-accent-600 hover:bg-accent-50" onClick={(e) => { e.stopPropagation(); handleOpenPetModal(client.id_cliente, pet); }} title="Editar Mascota">
-                                  <Edit3 className="h-5 w-5"/>
-                                </Button>
-                                <Link to={`/appointments?action=new&clientId=${client.id_cliente}&petId=${pet.id_mascota}`} title="Nuevo Turno">
-                                  <Button size="sm" variant="ghost" className="p-1.5 text-success-600 hover:bg-success-50">
-                                      <CalendarDays className="h-5 w-5"/>
-                                  </Button>
-                                </Link>
-                            </div>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  ) : (
-                    <p className="text-secondary-500">Este cliente aún no tiene mascotas registradas.</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          )
-        }) : (
-          <div className="text-center py-10 bg-surface rounded-lg shadow">
-            <Users className="mx-auto h-12 w-12 text-secondary-400" />
-            <h3 className="mt-2 text-sm font-medium text-secondary-900">No hay clientes</h3>
-            <p className="mt-1 text-sm text-secondary-500">Comience por agregar un nuevo cliente.</p>
-            {searchTerm && <p className="mt-1 text-sm text-secondary-500">Intente con otros términos de búsqueda.</p>}
-          </div>
-        )}
-      </div>
     </div>
   );
 };
