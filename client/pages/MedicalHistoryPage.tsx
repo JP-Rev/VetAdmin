@@ -8,6 +8,7 @@ import { FormField } from '../components/common/FormField';
 import { PrintableMedicalHistory } from '../components/PrintableMedicalHistory';
 import { FileText, Plus, Pill, Stethoscope, Activity, ArrowLeft, ShieldCheck, Printer, Paperclip, XCircle, FileImage, FileVideo, FileType, Pencil, Trash2, ChevronRight } from 'lucide-react';
 import { SpeciesIcon } from '../lib/speciesIcon';
+import { getPetAge } from '../lib/petAge';
 import { PasswordConfirmDialog } from '../components/common/PasswordConfirmDialog';
 
 /**
@@ -498,6 +499,8 @@ export const MedicalHistoryPage: React.FC = () => {
     return <Paperclip size={16} className="text-secondary-500 mr-1" />;
   };
 
+  const edadMascota = getPetAge(pet.fecha_nacimiento);
+
   const eventTone: Record<string, { dot: string; text: string }> = {
     [TipoEventoHistorial.CONSULTA]: { dot: 'bg-primary-600', text: 'text-primary-700' },
     [TipoEventoHistorial.CIRUGIA]: { dot: 'bg-error-500', text: 'text-error-600' },
@@ -524,7 +527,16 @@ export const MedicalHistoryPage: React.FC = () => {
             {pet.nombre}
           </h1>
           <p className="m-0 text-[12.5px] text-secondary-500 truncate">
-            {pet.especie} · {pet.sexo} ·{' '}
+            {pet.especie} · {pet.sexo}
+            {edadMascota && (
+              <>
+                {' · '}
+                <span title={`Nacimiento: ${new Date(pet.fecha_nacimiento + 'T12:00:00').toLocaleDateString('es-AR')}`}>
+                  {edadMascota.label}
+                </span>
+              </>
+            )}
+            {' · '}
             <Link to={`/clients/${client?.id_cliente}`} className="text-primary-700 hover:underline">
               {client?.nombre || 'Sin propietario'}
             </Link>

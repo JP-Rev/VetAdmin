@@ -6,6 +6,7 @@ import { Modal } from '../components/Modal';
 import { Button } from '../components/common/Button';
 import { FileText, PawPrint, Users, Plus, Search, ShoppingCart } from 'lucide-react';
 import { SpeciesIcon } from '../lib/speciesIcon';
+import { getPetAge } from '../lib/petAge';
 import {
   FilterCard, DataCard, TableWrap, Th, Td, Tr, RowActions, IconAction, EditIcon, EmptyState,
 } from '../components/common/ListLayout';
@@ -240,6 +241,7 @@ export const PetsPage: React.FC = () => {
                 <Th>Mascota</Th>
                 <Th>Especie</Th>
                 <Th>Raza</Th>
+                <Th>Edad</Th>
                 <Th>Propietario</Th>
                 <Th className="text-right">Acciones</Th>
               </tr>
@@ -247,6 +249,7 @@ export const PetsPage: React.FC = () => {
             <tbody>
               {filteredPets.map(pet => {
                 const historyCount = getMedicalHistoryByPetId(pet.id_mascota).length;
+                const edad = getPetAge(pet.fecha_nacimiento);
                 return (
                   <Tr key={pet.id_mascota}>
                     <Td>
@@ -259,6 +262,18 @@ export const PetsPage: React.FC = () => {
                     </Td>
                     <Td className="text-secondary-600">{pet.especie}</Td>
                     <Td className="text-secondary-600">{pet.breedName}</Td>
+                    <Td>
+                      {edad ? (
+                        <span
+                          className="font-mono text-[12.5px] text-secondary-700 whitespace-nowrap"
+                          title={`Nacimiento: ${new Date(pet.fecha_nacimiento + 'T12:00:00').toLocaleDateString('es-AR')}`}
+                        >
+                          {edad.short}
+                        </span>
+                      ) : (
+                        <span className="text-secondary-400">—</span>
+                      )}
+                    </Td>
                     <Td>
                       {pet.ownerId ? (
                         <Link to={`/clients/${pet.ownerId}`} className="text-primary-700 hover:underline font-medium">
