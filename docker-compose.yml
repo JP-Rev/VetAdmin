@@ -10,7 +10,15 @@ services:
       DATABASE_URL: file:/data/vetadmin.db
       STORAGE_ROOT: /srv/storage/vetadmin
     volumes:
-      - ${STORAGE_ROOT_HOST:-../storage/vet-admin}:/srv/storage/vetadmin
+      # Los archivos subidos van SIEMPRE bajo /srv/storage/ en el VPS: el backup
+      # automatico del servidor recorre ese arbol. Lo que quede afuera no se
+      # respalda. Ver vps/backups.md en Infra-Notes-VPS-Hostinger.
+      - ${STORAGE_ROOT_HOST:-/srv/storage/vetadmin}:/srv/storage/vetadmin
+      # TODO: la base tambien deberia estar bajo /srv/storage/vetadmin/database/
+      # en vez de este volumen Docker nombrado -- hoy es la unica de las 3 apps
+      # del VPS que no sigue esa convencion, y por eso el script de backup tiene
+      # que listarla a mano en vez de descubrirla sola. Migrarla requiere parar
+      # el stack y copiar el archivo (ver vps/backups.md seccion 7).
       - sqlite_data:/data
     ports:
       - "${SERVER_PORT:-4010}:4000"
