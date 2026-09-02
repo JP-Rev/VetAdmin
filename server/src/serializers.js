@@ -7,6 +7,7 @@ export const toCliente = (c) => ({
   telefono: c.telefono,
   email: c.email ?? '',
   domicilio: c.domicilio ?? '',
+  createdAt: dateOnly(c.createdAt),
   lastModified: epoch(c.updatedAt),
 })
 
@@ -24,6 +25,7 @@ export const toMascota = (m) => ({
   id_cliente: m.clienteId ?? '',
   fecha_nacimiento: dateOnly(m.fechaNacimiento),
   sexo: m.sexo,
+  createdAt: dateOnly(m.createdAt),
   lastModified: epoch(m.updatedAt),
 })
 
@@ -140,3 +142,22 @@ export const toGasto = (g) => ({
   categoria: g.categoria,
   lastModified: epoch(g.updatedAt),
 })
+
+export const CLINICA_ID = 'default'
+
+export const toClinica = (c) => ({
+  nombre: c.nombre,
+  direccion: c.direccion ?? '',
+  telefono: c.telefono ?? '',
+  email: c.email ?? '',
+})
+
+// La fila singleton se crea al primer acceso, para que la app nunca vea null.
+export const getClinica = async () => {
+  const { prisma } = await import('./prisma.js')
+  return prisma.clinica.upsert({
+    where: { id: CLINICA_ID },
+    create: { id: CLINICA_ID },
+    update: {},
+  })
+}

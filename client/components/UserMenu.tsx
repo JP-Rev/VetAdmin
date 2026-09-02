@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme, Theme } from '../contexts/ThemeContext';
-import { LogOut, User, ChevronDown, Moon, Sun, Zap } from 'lucide-react';
+import { LogOut, ChevronDown, Moon, Sun, Zap } from 'lucide-react';
 
 const THEME_OPTIONS: { value: Theme; label: string; icon: React.ReactNode }[] = [
   { value: 'light', label: 'Claro', icon: <Sun size={16} /> },
@@ -21,17 +21,27 @@ export const UserMenu: React.FC = () => {
 
   if (!user) return null;
 
+  const localPart = user.email.split('@')[0];
+  const displayName = localPart.charAt(0).toUpperCase() + localPart.slice(1);
+  const initials = localPart.slice(0, 2).toUpperCase();
+
   return (
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-2 text-white transition-colors p-2 rounded-md hover:bg-primary-700"
+        className="flex items-center gap-2.5 bg-surface border border-secondary-200 hover:border-secondary-300
+                   rounded-[10px] pl-1.5 pr-2.5 py-1.5 transition-colors"
+        aria-haspopup="menu"
+        aria-expanded={isOpen}
       >
-        <span className="user-avatar flex items-center justify-center h-8 w-8 rounded-full">
-          <User size={20} />
+        <span className="user-avatar w-7 h-7 rounded-lg bg-[#0a2a27] text-[#5eead4] flex items-center justify-center text-[11.5px] font-extrabold flex-shrink-0">
+          {initials}
         </span>
-        <span className="user-email hidden sm:block text-sm">{user.email}</span>
-        <ChevronDown size={16} className={`transform transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <span className="hidden sm:flex flex-col leading-[1.2] items-start min-w-0">
+          <strong className="text-[12.5px] text-secondary-900">{displayName}</strong>
+          <span className="user-email text-[10.5px] text-secondary-500 truncate max-w-[160px]">{user.email}</span>
+        </span>
+        <ChevronDown size={14} className={`text-secondary-500 flex-shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (

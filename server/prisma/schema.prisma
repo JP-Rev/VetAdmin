@@ -14,6 +14,16 @@ model User {
   createdAt    DateTime @default(now())
 }
 
+// Singleton: siempre la fila con id = "default".
+model Clinica {
+  id          String   @id @default("default")
+  nombre      String   @default("Mi Veterinaria")
+  direccion   String?
+  telefono    String?
+  email       String?
+  actualizado DateTime @updatedAt
+}
+
 model Cliente {
   id        String    @id @default(cuid())
   nombre    String

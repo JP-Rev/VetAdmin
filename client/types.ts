@@ -61,6 +61,7 @@ export interface Cliente {
   telefono: string;
   email: string;
   domicilio: string;
+  createdAt?: string;
   lastModified: number;
 }
 
@@ -78,6 +79,7 @@ export interface Mascota {
   id_cliente: string; 
   fecha_nacimiento: string; 
   sexo: SexoMascota;
+  createdAt?: string;
   lastModified: number;
 }
 
@@ -255,3 +257,9 @@ export type CirugiaForm = Omit<Cirugia, 'id_cirugia'>;
 export type RazaForm = Omit<Raza, 'id_raza'>;
 export type GastoForm = Omit<Gasto, 'id_gasto' | 'lastModified'>;
 export type CategoriaProductoForm = Omit<CategoriaProducto, 'id_categoria'>;
+export interface Clinica {
+  nombre: string;
+  direccion: string;
+  telefono: string;
+  email: string;
+}

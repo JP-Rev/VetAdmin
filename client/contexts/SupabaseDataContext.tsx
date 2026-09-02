@@ -7,7 +7,7 @@ import {
   Cliente, Mascota, Turno, Producto, Venta, Pago, HistorialMedico, Raza, Enfermedad, Cirugia, Gasto,
   MascotaEnfermedad, MascotaCirugia, ClienteForm, MascotaForm, TurnoForm, ProductoForm,
   VentaFormValues, EstadoVenta, MetodoPago, TipoEventoHistorial, RazaForm, EnfermedadForm, CirugiaForm, GastoForm, CategoriaGasto, EstadoTurno,
-  DailyCashFlowReportDetails, AttachmentFile, CategoriaProducto, CategoriaProductoForm
+  DailyCashFlowReportDetails, AttachmentFile, CategoriaProducto, CategoriaProductoForm, Clinica
 } from '../types';
 
 interface BootstrapResponse {
@@ -25,6 +25,7 @@ interface BootstrapResponse {
   mascotaEnfermedades: MascotaEnfermedad[];
   mascotaCirugias: MascotaCirugia[];
   gastos: Gasto[];
+  clinica: Clinica;
 }
 
 interface SupabaseDataContextType {
@@ -132,6 +133,10 @@ interface SupabaseDataContextType {
   printContent: (content: React.ReactNode, filename?: string) => void;
   printableContentForPortal: ReactNode | null;
 
+  // Clinic settings
+  clinica: Clinica;
+  updateClinica: (data: Clinica) => Promise<void>;
+
   // Data refresh
   refreshData: () => Promise<void>;
 }
@@ -154,6 +159,7 @@ export const SupabaseDataProvider: React.FC<{ children: ReactNode }> = ({ childr
   const [petSurgeries, setPetSurgeries] = useState<MascotaCirugia[]>([]);
   const [expenses, setExpenses] = useState<Gasto[]>([]);
   const [productCategories, setProductCategories] = useState<CategoriaProducto[]>([]);
+  const [clinica, setClinica] = useState<Clinica>({ nombre: 'Mi Veterinaria', direccion: '', telefono: '', email: '' });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [printableContentForPortal, setPrintableContentForPortal] = useState<ReactNode | null>(null);
@@ -180,6 +186,7 @@ export const SupabaseDataProvider: React.FC<{ children: ReactNode }> = ({ childr
       setPetDiseases(data.mascotaEnfermedades);
       setPetSurgeries(data.mascotaCirugias);
       setExpenses(data.gastos);
+      if (data.clinica) setClinica(data.clinica);
     } catch (err) {
       console.error('Error loading data:', err);
       setError(err instanceof Error ? err.message : 'Error desconocido');
@@ -192,6 +199,11 @@ export const SupabaseDataProvider: React.FC<{ children: ReactNode }> = ({ childr
   useEffect(() => {
     refreshData();
   }, []);
+
+  // Clinic settings
+  const updateClinica = async (data: Clinica): Promise<void> => {
+    setClinica(await apiPut<Clinica>('/clinica', data));
+  };
 
   // Client operations
   const addClient = async (clientData: ClienteForm): Promise<Cliente> => {
@@ -630,6 +642,8 @@ export const SupabaseDataProvider: React.FC<{ children: ReactNode }> = ({ childr
     getDailyCashFlowReport,
     printContent,
     printableContentForPortal,
+    clinica,
+    updateClinica,
     refreshData
   };
 

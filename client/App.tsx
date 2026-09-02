@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
-import { HashRouter, Routes, Route, Navigate, useLocation, NavLink } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { SupabaseDataProvider, useSupabaseData } from './contexts/SupabaseDataContext';
 import { Sidebar } from './components/Sidebar';
-import { UserMenu } from './components/UserMenu';
+import { AppHeader } from './components/AppHeader';
+import { FrodosoftLogo } from './components/FrodosoftLogo';
 import { DashboardPage } from './pages/DashboardPage';
 import { ClientsPage } from './pages/ClientsPage';
 import { PetsPage } from './pages/PetsPage'; 
@@ -17,8 +18,7 @@ import { MedicalHistoryPage } from './pages/MedicalHistoryPage';
 import { StatisticsPage } from './pages/StatisticsPage'; 
 import { SettingsPage } from './pages/SettingsPage'; 
 import { ExpensesPage } from './pages/ExpensesPage'; 
-import { APP_TITLE } from './constants';
-import { Menu as IconMenu, AlertCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, Loader2 } from 'lucide-react';
 
 const ScrollToTop: React.FC = () => {
   const { pathname } = useLocation();
@@ -91,32 +91,10 @@ const AppContent: React.FC = () => {
         <div className="min-h-screen bg-secondary-100 flex"> 
           <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
           
-          <div className={`flex flex-col flex-1 transition-all duration-300 ease-in-out md:ml-64`}>
-            <header className="md:hidden sticky top-0 z-30 bg-chrome-header text-white p-3 shadow-md flex items-center justify-between">
-               <div className="flex items-center">
-                 <button 
-                  onClick={toggleSidebar} 
-                  className="mr-3 p-2 rounded-md hover:bg-primary-700 focus:outline-none focus:bg-primary-500"
-                  aria-label="Abrir menú"
-                  aria-expanded={isSidebarOpen}
-                  aria-controls="sidebar"
-                >
-                  <IconMenu className="h-6 w-6" />
-                </button>
-                <NavLink to="/" className="app-logo text-lg font-bold">{APP_TITLE}</NavLink>
-               </div>
-               <UserMenu />
-            </header>
+          <div className={`flex flex-col flex-1 min-w-0 transition-all duration-300 ease-in-out md:ml-[252px]`}>
+            <AppHeader toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
 
-            {/* Desktop header with user menu */}
-            <header className="hidden md:block sticky top-0 z-30 bg-chrome-header text-white px-6 py-3 shadow-md">
-              <div className="flex justify-between items-center">
-                <h1 className="app-logo text-lg font-bold">{APP_TITLE}</h1>
-                <UserMenu />
-              </div>
-            </header>
-
-            <main className="flex-grow p-4 sm:p-6"> 
+            <main className="flex-grow px-4 py-5 sm:px-8 sm:py-6">
               <Routes>
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/clients" element={<ClientsPage />} />
@@ -140,8 +118,17 @@ const AppContent: React.FC = () => {
               </Routes>
             </main>
 
-            <footer className="bg-surface text-center text-sm text-secondary-600 p-4 border-t border-secondary-200">
-              {APP_TITLE} &copy; {new Date().getFullYear()} - Veterinary Management PWA
+            <footer className="py-5 px-8 flex items-center justify-center gap-2 text-xs text-secondary-500">
+              <span>Desarrollado por</span>
+              <a
+                href="https://frodosoft.com.ar"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 font-semibold text-secondary-600 hover:text-primary-700 transition-colors"
+              >
+                <FrodosoftLogo />
+                Frodosoft
+              </a>
             </footer>
           </div>
 

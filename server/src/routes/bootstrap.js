@@ -16,6 +16,8 @@ import {
   toMascotaEnfermedad,
   toMascotaCirugia,
   toGasto,
+  toClinica,
+  getClinica,
 } from '../serializers.js'
 
 const router = Router()
@@ -38,6 +40,7 @@ router.get(
       mascotaEnfermedades,
       mascotaCirugias,
       gastos,
+      clinica,
     ] = await Promise.all([
       prisma.cliente.findMany({ orderBy: { nombre: 'asc' } }),
       prisma.mascota.findMany({ orderBy: { nombre: 'asc' } }),
@@ -53,6 +56,7 @@ router.get(
       prisma.mascotaEnfermedad.findMany(),
       prisma.mascotaCirugia.findMany(),
       prisma.gasto.findMany({ orderBy: { fecha: 'desc' } }),
+      getClinica(),
     ])
 
     res.json({
@@ -70,6 +74,7 @@ router.get(
       mascotaEnfermedades: mascotaEnfermedades.map(toMascotaEnfermedad),
       mascotaCirugias: mascotaCirugias.map(toMascotaCirugia),
       gastos: gastos.map(toGasto),
+      clinica: toClinica(clinica),
     })
   })
 )

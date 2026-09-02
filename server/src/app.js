@@ -17,6 +17,7 @@ import gastosRouter from './routes/gastos.js'
 import ventasRouter from './routes/ventas.js'
 import historialMedicoRouter from './routes/historialMedico.js'
 import attachmentsRouter from './routes/attachments.js'
+import clinicaRouter from './routes/clinica.js'
 
 export function createApp() {
   const app = express()
@@ -44,6 +45,7 @@ export function createApp() {
   app.use('/api/ventas', requireAuth, ventasRouter)
   app.use('/api/historial-medico', requireAuth, historialMedicoRouter)
   app.use('/api/attachments', requireAuth, attachmentsRouter)
+  app.use('/api/clinica', requireAuth, clinicaRouter)
 
   app.use(errorHandler)
 

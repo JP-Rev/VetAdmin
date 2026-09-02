@@ -4,8 +4,68 @@ import { Raza, RazaForm, Enfermedad, EnfermedadForm, Cirugia, CirugiaForm, Espec
 import { Modal } from '../components/Modal';
 import { Button } from '../components/common/Button';
 import { FormField } from '../components/common/FormField';
-import { Plus, Edit3, Trash2, Settings as IconSettings, PawPrint, Bug, Activity, Package } from 'lucide-react';
+import { Plus, Edit3, Trash2, Settings as IconSettings, PawPrint, Bug, Activity, Package, Building2, Check } from 'lucide-react';
 import { ESPECIES } from '../constants';
+
+type TabKey = 'clinic' | 'breeds' | 'diseases' | 'surgeries' | 'productCategories';
+
+// Datos de la veterinaria: fila singleton, se edita en vez de crearse/borrarse.
+const ClinicSettingsForm: React.FC = () => {
+  const { clinica, updateClinica } = useSupabaseData();
+  const [form, setForm] = useState(clinica);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  React.useEffect(() => { setForm(clinica); }, [clinica]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    setSaved(false);
+    setError(null);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.nombre.trim()) { setError('El nombre de la veterinaria es obligatorio.'); return; }
+    setSaving(true);
+    try {
+      await updateClinica(form);
+      setSaved(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo guardar.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section className="bg-surface p-6 rounded-lg shadow-lg max-w-2xl">
+      <h2 className="text-xl font-semibold text-secondary-700 mb-1">Datos de la Veterinaria</h2>
+      <p className="text-sm text-secondary-500 mb-5">
+        El nombre aparece en el menú lateral y como título del dashboard.
+      </p>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <FormField label="Nombre de la Veterinaria" name="nombre" value={form.nombre} onChange={handleChange} required />
+        <FormField label="Dirección" name="direccion" value={form.direccion} onChange={handleChange} />
+        <FormField label="Teléfono" name="telefono" value={form.telefono} onChange={handleChange} />
+        <FormField label="Email" name="email" type="email" value={form.email} onChange={handleChange} />
+
+        {error && <p className="text-sm text-error-600">{error}</p>}
+
+        <div className="flex items-center gap-3 pt-2">
+          <Button type="submit" disabled={saving}>{saving ? 'Guardando…' : 'Guardar Cambios'}</Button>
+          {saved && (
+            <span className="flex items-center gap-1.5 text-sm text-success-600">
+              <Check size={16} /> Guardado
+            </span>
+          )}
+        </div>
+      </form>
+    </section>
+  );
+};
 
 // Breed Form
 interface BreedFormProps {
@@ -275,7 +335,7 @@ const ProductCategoryFormComponent: React.FC<ProductCategoryFormProps> = ({ init
 
 export const SettingsPage: React.FC = () => {
   const { breeds, deleteBreed, diseases, deleteDisease, surgeries, deleteSurgery, productCategories, deleteProductCategory } = useSupabaseData();
-  const [activeTab, setActiveTab] = useState<'breeds' | 'diseases' | 'surgeries' | 'productCategories'>('breeds');
+  const [activeTab, setActiveTab] = useState<TabKey>('clinic');
   
   const [isBreedModalOpen, setIsBreedModalOpen] = useState(false);
   const [editingBreed, setEditingBreed] = useState<Raza | undefined>(undefined);
@@ -320,6 +380,8 @@ export const SettingsPage: React.FC = () => {
 
   const renderTabContent = () => {
     switch (activeTab) {
+      case 'clinic':
+        return <ClinicSettingsForm />;
       case 'breeds':
         return (
           <section>
@@ -469,6 +531,7 @@ export const SettingsPage: React.FC = () => {
   };
 
   const tabs = [
+    { key: 'clinic', label: 'Clínica', icon: <Building2 size={18} /> },
     { key: 'breeds', label: 'Razas', icon: <PawPrint size={18} /> },
     { key: 'diseases', label: 'Enfermedades', icon: <Bug size={18} /> },
     { key: 'surgeries', label: 'Tipos de Cirugía', icon: <Activity size={18} /> },
@@ -486,7 +549,7 @@ export const SettingsPage: React.FC = () => {
         {tabs.map(tab => (
           <button
             key={tab.key}
-            onClick={() => setActiveTab(tab.key as 'breeds' | 'diseases' | 'surgeries' | 'productCategories')}
+            onClick={() => setActiveTab(tab.key as TabKey)}
             className={`flex items-center space-x-2 px-4 py-3 -mb-px text-sm font-medium focus:outline-none transition-colors duration-150 whitespace-nowrap
               ${activeTab === tab.key 
                 ? 'border-b-2 border-primary-600 text-primary-600' 
