@@ -35,7 +35,10 @@ export default defineConfig(({ mode }) => {
       plugins: [
         VitePWA({
           registerType: 'autoUpdate',
-          injectRegister: 'auto',
+          // El registro lo hace lib/swUpdate.ts, que ademas chequea
+          // actualizaciones periodicamente y recarga al activarse una version
+          // nueva. Con 'auto' el plugin inyectaria ademas su registro pelado.
+          injectRegister: null,
           workbox: {
             globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
             navigateFallback: '/index.html',
