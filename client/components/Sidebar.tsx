@@ -128,7 +128,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
         className="flex items-center gap-2.5 rounded-[12px] px-3 py-2.5 text-[#a8c6c2]
                    hover:bg-white/[0.06] hover:text-white transition-colors"
       >
-        <FrodosoftLogo size={20} />
+        <FrodosoftLogo size={24} />
         <span className="text-xs">
           Producto de <FrodosoftWordmark />
         </span>

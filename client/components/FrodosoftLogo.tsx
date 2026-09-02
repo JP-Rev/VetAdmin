@@ -1,49 +1,40 @@
 import React from 'react';
 
 /**
- * Marca de Frodosoft, reconstruida en SVG a partir del logotipo original.
- * Usa `currentColor` en todos los trazos, así hereda el color del contenedor
- * y funciona igual sobre fondo claro u oscuro sin necesidad de dos versiones.
+ * Marca de Frodosoft (logotipo oficial).
+ *
+ * El SVG original venía con el fondo blanco horneado y el color fijo en
+ * #242121, así que sólo servía sobre fondo claro. Acá se quitó el fondo y los
+ * trazos usan `currentColor`, de modo que la marca hereda el color del
+ * contenedor: oscura sobre fondo claro, clara sobre fondo oscuro, sin
+ * mantener dos versiones.
+ *
+ * El mismo archivo está en `public/frodosoft-logo.svg` para reutilizarlo en
+ * otros proyectos.
+ *
+ * Nota: por debajo de ~24px los trazos finos se empastan; para íconos chicos
+ * conviene no bajar de ese tamaño.
  */
-export const FrodosoftLogo: React.FC<{ size?: number; className?: string }> = ({ size = 18, className }) => (
+export const FrodosoftLogo: React.FC<{ size?: number; className?: string }> = ({ size = 24, className }) => (
   <svg
     width={size}
     height={size}
-    viewBox="0 0 100 100"
-    fill="none"
+    viewBox="-4.9 5 204 204"
     xmlns="http://www.w3.org/2000/svg"
     className={className}
     aria-hidden="true"
     focusable="false"
   >
-    <g stroke="currentColor" strokeLinecap="round">
-      {/* Anillo exterior, partido donde salen las trazas diagonales */}
-      <path d="M 68.2 14.4 A 40 40 0 0 0 14.4 68.2" strokeWidth="7" fill="none" />
-      <path d="M 31.8 85.6 A 40 40 0 0 0 85.6 31.8" strokeWidth="7" fill="none" />
-
-      {/* Trazas diagonales que irradian desde el centro hacia el borde */}
-      <path d="M 62 38 L 81 19" strokeWidth="8" fill="none" />
-      <path d="M 38 62 L 19 81" strokeWidth="8" fill="none" />
-
-      {/* Anillo intermedio, partido en la misma diagonal */}
-      <path d="M 60 30.4 A 22 22 0 0 0 30.4 60" strokeWidth="6" fill="none" />
-      <path d="M 40 69.6 A 22 22 0 0 0 69.6 40" strokeWidth="6" fill="none" />
-
-      {/* Centro: anillo + punto */}
-      <circle cx="50" cy="50" r="11" strokeWidth="5.5" fill="none" />
-      <circle cx="50" cy="50" r="4.5" stroke="none" fill="currentColor" />
-
-      {/* Nodos en los extremos de los arcos */}
-      <circle cx="68.2" cy="14.4" r="3.4" strokeWidth="3" fill="none" />
-      <circle cx="14.4" cy="68.2" r="3.4" strokeWidth="3" fill="none" />
-      <circle cx="31.8" cy="85.6" r="3.4" strokeWidth="3" fill="none" />
-      <circle cx="85.6" cy="31.8" r="3.4" strokeWidth="3" fill="none" />
+    <g fill="currentColor" stroke="currentColor" fillRule="evenodd" clipRule="evenodd">
+      <path strokeWidth="0.5" d="M 114.94,6.8 c 4.32,0.67 8.55,1.66 12.72,2.97 c 1.19,0.66 6.57,1.91 6.3,3.66 c -7.44,7.87 -15.04,15.6 -22.8,23.2 c -0.48,0.35 -1.01,0.55 -1.6,0.61 c -7.68,-0.91 -15.36,-0.92 -23.04,-0.02 c -37.56,5.74 -64.44,41.54 -58.61,79.27 c -4.47,7.6 -4.71,14.53 4.12,18.91 c 13.99,4.38 20.85,-15.03 7.78,-20.67 c -0.4,-0.33 -0.63,-0.76 -0.68,-1.28 c -1.09,-10.72 0.58,-20.99 5,-30.82 c 13.46,-27.95 38.47,-37.64 68.18,-33.05 c 8.45,-8.17 16.86,-16.37 25.24,-24.6 c 3.29,-0.42 15.69,8.9 18.63,11.34 c 0.95,0.81 1.02,1.7 0.19,2.65 c -3.4,3.33 -6.77,6.68 -10.11,10.06 c -9.64,9.6 -19.31,19.17 -29.01,28.7 c -0.5,0.3 -1.03,0.37 -1.59,0.21 c -34.06,-17.57 -64.73,14.97 -47.67,47.74 c 0.11,0.54 0.01,1.04 -0.32,1.48 c -13.01,13.01 -26.02,26 -39.03,39 c -1.6,1.71 -3.07,-1.47 -4.14,-2.36 c -44.99,-58.69 -7.69,-141.67 65.01,-148.81 c 5.6,-0.6 5.65,4.28 10.35,5.65 c 8.94,2.24 15.39,-4.32 14.48,-13.12 c 0.07,-0.35 0.28,-0.59 0.6,-0.72 Z M 75.39,185.11 c 9,-10.15 8.77,-8.15 22.11,-7.38 c 43.57,-1.09 73.74,-36.91 69.03,-80.06 c 3.47,-7.27 4.94,-13.51 -3.17,-18.4 c -13.27,-6.01 -23.12,12.26 -9.32,20.1 c 2.95,2.35 0.51,21.63 -1.41,25.67 c -9.75,28.85 -38,45.87 -68.11,39.68 c -4.9,-1.35 -14.42,12.69 -18.53,15.49 c -2.55,2.55 -5.08,5.12 -7.59,7.71 c -1.89,1.57 -3.82,1.56 -5.79,-0.01 c -5.21,-3 -10.13,-6.42 -14.77,-10.25 c -1.65,-1.2 0.23,-2.58 1.03,-3.54 c 12.66,-12.56 25.36,-25.07 38.09,-37.53 c 1.48,-1.29 6.68,2.41 8.33,2.8 c 16.85,6.08 34.58,-0.9 42.34,-17.11 c 6.18,-12.76 4.26,-21.76 -1.28,-33.92 c -0.08,-0.49 0.03,-0.94 0.34,-1.34 c 12.34,-12.55 24.77,-25.02 37.3,-37.4 c 0.98,-0.74 2.19,-2.98 3.58,-1.68 c 49.2,58.18 9.02,148.2 -66.06,151.11 c -0.54,-0.09 -0.99,-0.35 -1.33,-0.78 c -6.61,-10.72 -21.16,-4.73 -20.33,8.11 c -0.16,0.17 -0.31,0.34 -0.47,0.51 c -2.64,-0.07 -5.26,-0.42 -7.85,-1.07 c -3.52,-0.83 -6.92,-2.03 -10.19,-3.58 c -0.77,-0.29 -1.14,-0.82 -1.12,-1.62 c 4.96,-5.25 10.02,-10.43 15.17,-15.51 Z M 73.9,107 c 0.83,-33.48 52.23,-28.63 45.89,5.36 c -7.04,26.47 -44.95,22.64 -45.89,-5.36 Z M 86.06,107 c 0.77,9.22 10.27,14.18 17.93,8.44 c 15.01,-14.51 -14.91,-29.97 -17.93,-8.44 Z" />
+      <path strokeWidth="0.5" d="M 153.76,89.12 c 1.59,-10.15 15.37,-1.21 6.27,4.22 c -3.53,0.76 -5.62,-0.65 -6.27,-4.22 Z M 31.16,125.03 c 0.48,-5.65 8.23,-6.19 9.17,-0.46 c 0.04,6.66 -8.45,6.85 -9.17,0.46 Z M 86.13,204 c 0.62,-6.89 10.48,-5.87 8.94,1.51 c -1.87,4.82 -8.45,3.72 -8.94,-1.51 Z" />
+      <path strokeWidth="0.5" d="M 101.68,5.65 c 7.63,-2.1 9.15,9.35 1.31,9.42 c -4.87,-0.58 -6.18,-7.03 -1.31,-9.42 Z" />
     </g>
   </svg>
 );
 
 /**
- * Nombre de la marca con el contraste de pesos del logotipo original:
+ * Nombre de la marca con el contraste de pesos del logotipo:
  * "Frodo" en negrita y "soft" en fina.
  */
 export const FrodosoftWordmark: React.FC<{ className?: string }> = ({ className }) => (
