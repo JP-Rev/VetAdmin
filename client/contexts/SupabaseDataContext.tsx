@@ -1,6 +1,4 @@
 import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 import { apiGet, apiPost, apiPut, apiPatch, apiDelete, apiUpload } from '../lib/api';
 
 import {
@@ -583,46 +581,42 @@ export const SupabaseDataProvider: React.FC<{ children: ReactNode }> = ({ childr
   };
 
   // Print functionality
-  const printContent = async (content: React.ReactNode, filename: string = 'documento.pdf') => {
+  /**
+   * Imprime un documento usando el diálogo del navegador.
+   *
+   * Antes se generaba el PDF con html2canvas + jsPDF, pero eso tenía tres
+   * problemas: el PDF salía con `format: [canvas.width, canvas.height]`, o sea
+   * una única página del tamaño que midiera el HTML en vez de A4; un historial
+   * largo quedaba en una sola hoja gigante sin paginar; y el resultado era una
+   * imagen, con el texto no seleccionable ni buscable.
+   *
+   * La impresión nativa respeta `@page { size: A4 }` (ver index.css), pagina
+   * sola repitiendo encabezado y pie, y conserva el texto como texto. Desde el
+   * diálogo se puede imprimir o elegir "Guardar como PDF".
+   *
+   * `filename` ya no fuerza el nombre del archivo (lo decide el navegador a
+   * partir del título del documento); se usa como título de la ventana de
+   * impresión, que es lo que el navegador propone por defecto.
+   */
+  const printContent = async (content: React.ReactNode, filename: string = 'documento') => {
     setPrintableContentForPortal(content);
     document.body.classList.add('printing');
 
-    await new Promise(resolve => setTimeout(resolve, 300));
+    const tituloOriginal = document.title;
+    document.title = filename.replace(/\.pdf$/i, '');
 
-    const printableElement = document.getElementById('print-root')?.querySelector('.printable-area') as HTMLElement;
-
-    if (!printableElement) {
-      console.error("Elemento para imprimir '.printable-area' no encontrado en '#print-root'.");
-      alert("Error: No se encontró el contenido para crear el PDF. (Código: ELM_NF)");
-      document.body.classList.remove('printing');
-      setPrintableContentForPortal(null);
-      return;
-    }
+    // Un par de cuadros para que React monte el contenido en el portal y el
+    // navegador aplique los estilos antes de abrir el diálogo.
+    await new Promise(requestAnimationFrame);
+    await new Promise(resolve => setTimeout(resolve, 150));
 
     try {
-      const canvas = await html2canvas(printableElement, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-      });
-      const imgData = canvas.toDataURL('image/png');
-
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'pt',
-        format: [canvas.width, canvas.height]
-      });
-
-      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-      pdf.save(filename);
-
-    } catch (error) {
-      console.error("Error durante la generación del PDF:", error);
-      alert("Hubo un error al generar el PDF. Revise la consola para más detalles. (Código: PDF_GEN_ERR)");
+      window.print();
+    } finally {
+      document.title = tituloOriginal;
+      document.body.classList.remove('printing');
+      setPrintableContentForPortal(null);
     }
-
-    document.body.classList.remove('printing');
-    setPrintableContentForPortal(null);
   };
 
   const value: SupabaseDataContextType = {

@@ -16,7 +16,7 @@ interface PrintableReceiptProps {
 
 export const PrintableReceipt: React.FC<PrintableReceiptProps> = ({ venta, client, pet, ventaProductos }) => {
   return (
-    <div className="p-2 font-sans text-xs" style={{ width: '280px', margin: '0 auto' }}> {/* Typical receipt width */}
+    <div className="printable-area p-2 font-sans text-xs" style={{ width: '280px', margin: '0 auto' }}> {/* Typical receipt width */}
       <div className="text-center mb-3">
         <h1 className="text-base font-bold">{APP_TITLE}</h1>
         {/* Optional: Add address, phone number here */}

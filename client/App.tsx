@@ -127,10 +127,10 @@ const AppContent: React.FC = () => {
           )}
         </div>
         {printableContentForPortal && 
-          ReactDOM.createPortal(
-            <div className="printable-area">{printableContentForPortal}</div>,
-            document.getElementById('print-root')!
-          )
+          // Contenedor neutro: si llevara `printable-area`, sus reglas
+          // alcanzarian por descendencia al documento de adentro y le pisarian
+          // el formato. Cada componente imprimible declara su propia clase.
+          ReactDOM.createPortal(printableContentForPortal, document.getElementById('print-root')!)
         }
     </>
   );
