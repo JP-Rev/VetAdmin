@@ -242,6 +242,7 @@ export const PetsPage: React.FC = () => {
                 <Th>Especie</Th>
                 <Th>Raza</Th>
                 <Th>Edad</Th>
+                <Th>Peso</Th>
                 <Th>Propietario</Th>
                 <Th className="text-right">Acciones</Th>
               </tr>
@@ -273,6 +274,11 @@ export const PetsPage: React.FC = () => {
                       ) : (
                         <span className="text-secondary-400">—</span>
                       )}
+                    </Td>
+                    <Td className="font-mono text-[12.5px] whitespace-nowrap">
+                      {pet.peso != null
+                        ? `${pet.peso.toLocaleString('es-AR')} kg`
+                        : <span className="text-secondary-400">—</span>}
                     </Td>
                     <Td>
                       {pet.ownerId ? (

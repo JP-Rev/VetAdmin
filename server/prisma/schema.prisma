@@ -66,6 +66,8 @@ model Mascota {
   clienteId       String?
   fechaNacimiento DateTime
   sexo            String
+  /// Peso en kilogramos. Opcional: no siempre se pesa en cada visita.
+  peso            Float?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

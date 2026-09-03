@@ -204,6 +204,7 @@ export const PrintableMedicalHistory: React.FC<PrintableMedicalHistoryProps> = (
                   { k: 'Raza', v: pet.raza_nombre },
                   { k: 'Sexo', v: pet.sexo },
                   { k: 'Nacimiento', v: nacimiento },
+                  { k: 'Peso', v: pet.peso != null ? `${pet.peso.toLocaleString('es-AR')} kg` : 'No registrado' },
                 ]} />
               </td>
               <td style={{ padding: '10pt 12pt', verticalAlign: 'top', width: '50%' }}>

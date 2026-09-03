@@ -85,6 +85,8 @@ export interface Mascota {
   id_cliente: string; 
   fecha_nacimiento: string; 
   sexo: SexoMascota;
+  /** Peso en kilogramos. null cuando todavía no se registró. */
+  peso: number | null;
   createdAt?: string;
   lastModified: number;
 }
@@ -255,7 +257,11 @@ export type ClienteForm = Pick<
   Cliente,
   'nombre' | 'telefono' | 'telefono_alt' | 'email' | 'calle' | 'numero' | 'localidad'
 >;
-export type MascotaForm = Omit<Mascota, 'id_mascota' | 'lastModified'>;
+// El peso viaja como texto: el input vacío significa "sin registrar", que no
+// es lo mismo que 0.
+export type MascotaForm = Omit<Mascota, 'id_mascota' | 'lastModified' | 'peso'> & {
+  peso: string;
+};
 export type TurnoForm = Omit<Turno, 'id_turno' | 'lastModified' | 'estado'>; 
 export type ProductoForm = Omit<Producto, 'id_producto' | 'lastModified'>;
 export type VentaFormValues = {

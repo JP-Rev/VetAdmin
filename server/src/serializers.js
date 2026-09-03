@@ -31,6 +31,7 @@ export const toMascota = (m) => ({
   id_cliente: m.clienteId ?? '',
   fecha_nacimiento: dateOnly(m.fechaNacimiento),
   sexo: m.sexo,
+  peso: m.peso ?? null,
   createdAt: dateOnly(m.createdAt),
   lastModified: epoch(m.updatedAt),
 })

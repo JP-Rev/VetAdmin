@@ -118,11 +118,20 @@ export const PetFormComponent: React.FC<PetFormProps> = ({ clientId, initialData
     id_cliente: clientId,
     fecha_nacimiento: '',
     sexo: SexoMascota.MACHO,
+    peso: '',
   };
 
   const [formData, setFormData] = useState<MascotaForm>(
     initialData
-      ? { nombre: initialData.nombre, especie: initialData.especie, raza_id: initialData.raza_id, id_cliente: initialData.id_cliente, fecha_nacimiento: initialData.fecha_nacimiento, sexo: initialData.sexo }
+      ? {
+          nombre: initialData.nombre,
+          especie: initialData.especie,
+          raza_id: initialData.raza_id,
+          id_cliente: initialData.id_cliente,
+          fecha_nacimiento: initialData.fecha_nacimiento,
+          sexo: initialData.sexo,
+          peso: initialData.peso != null ? String(initialData.peso) : '',
+        }
       : { ...initialFormState, id_cliente: clientId } // Ensure clientId is set for new pets
   );
   const [errors, setErrors] = useState<Partial<Record<keyof MascotaForm, string>>>({});
@@ -152,6 +161,11 @@ export const PetFormComponent: React.FC<PetFormProps> = ({ clientId, initialData
     if (!formData.raza_id) newErrors.raza_id = 'La raza es obligatoria.';
     if (!formData.fecha_nacimiento) newErrors.fecha_nacimiento = 'Fecha de nacimiento obligatoria.';
     if (!formData.id_cliente) newErrors.id_cliente = 'El cliente es obligatorio.'; // Should always be set by prop
+    // El peso es opcional, pero si se carga tiene que ser un numero positivo.
+    if (formData.peso.trim()) {
+      const n = Number(formData.peso.replace(',', '.'));
+      if (!Number.isFinite(n) || n <= 0) newErrors.peso = 'Ingresá un peso válido en kg.';
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -159,11 +173,12 @@ export const PetFormComponent: React.FC<PetFormProps> = ({ clientId, initialData
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validate()) {
+      const payload = { ...formData, peso: formData.peso.trim().replace(',', '.') };
        if (initialData) {
-        updatePet(initialData.id_mascota, formData);
-        onSave({ ...initialData, ...formData, lastModified: Date.now() });
+        updatePet(initialData.id_mascota, payload);
+        onSave({ ...initialData, ...formData, peso: payload.peso ? Number(payload.peso) : null, lastModified: Date.now() });
       } else {
-        const newPet = addPet(formData); // formData already includes id_cliente
+        const newPet = addPet(payload); // formData already includes id_cliente
         onSave(newPet);
       }
     }
@@ -174,7 +189,10 @@ export const PetFormComponent: React.FC<PetFormProps> = ({ clientId, initialData
       <FormField label="Nombre Mascota" name="nombre" value={formData.nombre} onChange={handleChange} error={errors.nombre} required />
       <FormField label="Especie" name="especie" as="select" value={formData.especie} onChange={handleChange} error={errors.especie as string} required options={ESPECIES.map(e => ({ value: e, label: e }))} />
       <FormField label="Raza" name="raza_id" as="select" value={formData.raza_id} onChange={handleChange} error={errors.raza_id} required options={availableBreeds.map(r => ({ value: r.id_raza, label: r.nombre }))} placeholder="Seleccione una raza" />
-      <FormField label="Fecha de Nacimiento" name="fecha_nacimiento" type="date" value={formData.fecha_nacimiento} onChange={handleChange} error={errors.fecha_nacimiento} required />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <FormField label="Fecha de Nacimiento" name="fecha_nacimiento" type="date" value={formData.fecha_nacimiento} onChange={handleChange} error={errors.fecha_nacimiento} required className="mb-0" />
+        <FormField label="Peso (kg)" name="peso" type="number" step="0.01" value={formData.peso} onChange={handleChange} error={errors.peso} placeholder="Opcional" className="mb-0" />
+      </div>
       <FormField label="Sexo" name="sexo" as="select" value={formData.sexo} onChange={handleChange} required options={Object.values(SexoMascota).map(s => ({ value: s, label: s }))} />
       <div className="flex justify-end space-x-3 pt-4">
         <Button type="button" variant="secondary" onClick={onClose}>Cancelar</Button>
@@ -454,6 +472,7 @@ export const ClientsPage: React.FC = () => {
                                         <span className="text-[11.5px] text-secondary-500 truncate">
                                           {pet.especie} · {breed?.nombre || 'Raza desconocida'} · {pet.sexo}
                                           {edad && ` · ${edad.label}`}
+                                          {pet.peso != null && ` · ${pet.peso.toLocaleString('es-AR')} kg`}
                                         </span>
                                       </span>
                                       {historyCount > 0 && (

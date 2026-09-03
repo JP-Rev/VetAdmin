@@ -1,8 +1,16 @@
 import { prisma } from '../prisma.js'
 import { toMascota, toMascotaEnfermedad, toMascotaCirugia } from '../serializers.js'
 import { crudRouter } from './crudRouter.js'
-import { assertOneOf, ESPECIES, SEXOS } from '../validators.js'
+import { assertOneOf, ESPECIES, SEXOS, ValidationError } from '../validators.js'
 import { asyncRoute } from '../http.js'
+
+/** El peso llega como texto del formulario; vacio significa "sin registrar". */
+const toPeso = (v) => {
+  if (v === undefined || v === null || v === '') return null
+  const n = Number(v)
+  if (!Number.isFinite(n) || n <= 0) throw new ValidationError('El peso debe ser un número mayor a cero')
+  return n
+}
 
 const toCreateData = (body) => {
   assertOneOf(body.especie, ESPECIES, 'especie')
@@ -14,6 +22,7 @@ const toCreateData = (body) => {
     clienteId: body.id_cliente || null,
     fechaNacimiento: new Date(body.fecha_nacimiento),
     sexo: body.sexo,
+    peso: toPeso(body.peso),
   }
 }
 
@@ -27,6 +36,7 @@ const toUpdateData = (body) => {
   if (body.id_cliente !== undefined) data.clienteId = body.id_cliente || null
   if (body.fecha_nacimiento !== undefined) data.fechaNacimiento = new Date(body.fecha_nacimiento)
   if (body.sexo !== undefined) data.sexo = body.sexo
+  if (body.peso !== undefined) data.peso = toPeso(body.peso)
   return data
 }
 

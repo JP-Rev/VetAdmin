@@ -540,6 +540,7 @@ export const MedicalHistoryPage: React.FC = () => {
           </h1>
           <p className="m-0 text-[12.5px] text-secondary-500 truncate">
             {pet.especie} · {pet.sexo}
+            {pet.peso != null && ` · ${pet.peso.toLocaleString('es-AR')} kg`}
             {edadMascota && (
               <>
                 {' · '}
