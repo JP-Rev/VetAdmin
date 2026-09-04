@@ -15,6 +15,7 @@ import {
   toCirugia,
   toMascotaEnfermedad,
   toMascotaCirugia,
+  toPesaje,
   toGasto,
   toClinica,
   getClinica,
@@ -39,6 +40,7 @@ router.get(
       cirugias,
       mascotaEnfermedades,
       mascotaCirugias,
+      pesajes,
       gastos,
       clinica,
     ] = await Promise.all([
@@ -55,6 +57,7 @@ router.get(
       prisma.cirugia.findMany({ orderBy: { tipo: 'asc' } }),
       prisma.mascotaEnfermedad.findMany(),
       prisma.mascotaCirugia.findMany(),
+      prisma.pesaje.findMany({ orderBy: { fecha: 'asc' } }),
       prisma.gasto.findMany({ orderBy: { fecha: 'desc' } }),
       getClinica(),
     ])
@@ -73,6 +76,7 @@ router.get(
       cirugias: cirugias.map(toCirugia),
       mascotaEnfermedades: mascotaEnfermedades.map(toMascotaEnfermedad),
       mascotaCirugias: mascotaCirugias.map(toMascotaCirugia),
+      pesajes: pesajes.map(toPesaje),
       gastos: gastos.map(toGasto),
       clinica: toClinica(clinica),
     })

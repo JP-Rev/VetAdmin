@@ -6,7 +6,7 @@ import { Button } from '../components/common/Button';
 import { Modal } from '../components/Modal';
 import { FormField } from '../components/common/FormField';
 import { PrintableMedicalHistory } from '../components/PrintableMedicalHistory';
-import { FileText, Plus, Pill, Stethoscope, Activity, ArrowLeft, ShieldCheck, Printer, Paperclip, XCircle, FileImage, FileVideo, FileType, Pencil, Trash2, ChevronRight } from 'lucide-react';
+import { FileText, Plus, Pill, Stethoscope, Activity, ArrowLeft, ShieldCheck, Printer, Paperclip, XCircle, FileImage, FileVideo, FileType, Pencil, Trash2, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react';
 import { SpeciesIcon } from '../lib/speciesIcon';
 import { getPetAge } from '../lib/petAge';
 import { PasswordConfirmDialog } from '../components/common/PasswordConfirmDialog';
@@ -386,7 +386,7 @@ const EditEventFormComponent: React.FC<EditEventFormProps> = ({ initialEvent, on
 export const MedicalHistoryPage: React.FC = () => {
   const { petId } = useParams<{ petId: string }>();
   const navigate = useNavigate();
-  const { getPetById, getClientById, getMedicalHistoryByPetId, updateMedicalHistoryEvent, diseases, surgeries, petDiseases, petSurgeries, printContent, breeds, deleteAttachment, deleteMedicalHistoryEvent } = useSupabaseData();
+  const { getPetById, getClientById, getMedicalHistoryByPetId, updateMedicalHistoryEvent, diseases, surgeries, petDiseases, petSurgeries, printContent, breeds, deleteAttachment, deleteMedicalHistoryEvent, getPesajesByPetId, addPesaje, deletePesaje } = useSupabaseData();
   
   const [searchParams, setSearchParams] = useSearchParams();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -408,6 +408,10 @@ export const MedicalHistoryPage: React.FC = () => {
   // Colapsados por defecto: la historia clinica se lee de un vistazo y se
   // despliega solo el evento que interesa.
   const [expandidos, setExpandidos] = useState<Set<string>>(new Set());
+  const [pesoModalAbierto, setPesoModalAbierto] = useState(false);
+  const [nuevoPeso, setNuevoPeso] = useState('');
+  const [fechaPeso, setFechaPeso] = useState('');
+  const [pesoError, setPesoError] = useState<string | null>(null);
 
   const toggleEvento = (id: string) =>
     setExpandidos(prev => {
@@ -512,6 +516,12 @@ export const MedicalHistoryPage: React.FC = () => {
   };
 
   const edadMascota = getPetAge(pet.fecha_nacimiento);
+  const pesajesMascota = getPesajesByPetId(pet.id_mascota);
+  const pesoActual = pesajesMascota.length > 0 ? pesajesMascota[pesajesMascota.length - 1] : null;
+  // Diferencia contra el pesaje anterior, para ver si sube o baja.
+  const variacionPeso = pesajesMascota.length > 1
+    ? Number((pesoActual!.peso - pesajesMascota[pesajesMascota.length - 2].peso).toFixed(2))
+    : null;
 
   const eventTone: Record<string, { dot: string; text: string }> = {
     [TipoEventoHistorial.CONSULTA]: { dot: 'bg-primary-600', text: 'text-primary-700' },
@@ -540,7 +550,7 @@ export const MedicalHistoryPage: React.FC = () => {
           </h1>
           <p className="m-0 text-[12.5px] text-secondary-500 truncate">
             {pet.especie} · {pet.sexo}
-            {pet.peso != null && ` · ${pet.peso.toLocaleString('es-AR')} kg`}
+            {pesoActual && ` · ${pesoActual.peso.toLocaleString('es-AR')} kg`}
             {edadMascota && (
               <>
                 {' · '}
@@ -565,6 +575,121 @@ export const MedicalHistoryPage: React.FC = () => {
           </IconBtn>
         </div>
       </div>
+
+      {/* Evolución del peso: el valor suelto no dice nada, la serie sí. */}
+      <section className="bg-surface border border-secondary-200 rounded-[18px] px-5 py-[18px]
+                          shadow-[0_1px_2px_rgba(15,31,29,0.04)]">
+        <div className="flex flex-wrap items-start justify-between gap-3 mb-3.5">
+          <div>
+            <h2 className="m-0 text-[16.5px] font-bold tracking-[-0.3px] text-secondary-900">Peso</h2>
+            <p className="mt-0.5 mb-0 text-[12.5px] text-secondary-500">
+              {pesajesMascota.length === 0
+                ? 'Sin registros todavía'
+                : `${pesajesMascota.length} registro(s) · último el ${new Date(pesoActual!.fecha + 'T12:00:00').toLocaleDateString('es-AR')}`}
+            </p>
+          </div>
+          <div className="flex items-center gap-2.5">
+            {pesoActual && (
+              <span className="flex items-baseline gap-1.5">
+                <strong className="text-[22px] font-extrabold tracking-[-0.6px] text-secondary-900 tabular-nums">
+                  {pesoActual.peso.toLocaleString('es-AR')}
+                </strong>
+                <span className="text-[12px] text-secondary-500">kg</span>
+                {variacionPeso !== null && (
+                  <span className={`ml-1 flex items-center gap-0.5 font-mono text-[11px] font-semibold ${
+                    variacionPeso > 0 ? 'text-warning-700' : variacionPeso < 0 ? 'text-primary-700' : 'text-secondary-500'
+                  }`}>
+                    {variacionPeso > 0 ? <TrendingUp size={12} /> : variacionPeso < 0 ? <TrendingDown size={12} /> : null}
+                    {variacionPeso > 0 ? '+' : ''}{variacionPeso.toLocaleString('es-AR', { maximumFractionDigits: 2 })}
+                  </span>
+                )}
+              </span>
+            )}
+            <IconBtn label="Registrar peso" variant="primary" onClick={() => setPesoModalAbierto(true)}>
+              <Plus size={16} />
+            </IconBtn>
+          </div>
+        </div>
+
+        {pesajesMascota.length > 1 && (
+          <div className="flex items-end gap-1 h-[52px] mb-3" aria-hidden="true">
+            {pesajesMascota.map(pj => {
+              const pesos = pesajesMascota.map(x => x.peso);
+              const min = Math.min(...pesos), max = Math.max(...pesos);
+              const alto = max === min ? 60 : 15 + ((pj.peso - min) / (max - min)) * 85;
+              return (
+                <span key={pj.id_pesaje} className="flex-1 flex flex-col justify-end h-full"
+                      title={`${pj.peso} kg · ${new Date(pj.fecha + 'T12:00:00').toLocaleDateString('es-AR')}`}>
+                  <span className="w-full rounded-t-[3px] bg-primary-200 block" style={{ height: `${alto}%` }} />
+                </span>
+              );
+            })}
+          </div>
+        )}
+
+        {pesajesMascota.length > 0 && (
+          <ul className="flex flex-wrap gap-2 m-0 p-0 list-none">
+            {[...pesajesMascota].reverse().slice(0, 8).map(pj => (
+              <li key={pj.id_pesaje}
+                  className="flex items-center gap-2 bg-secondary-50 border border-secondary-200 rounded-[9px] pl-2.5 pr-1.5 py-1.5">
+                <span className="font-mono text-[12px] font-semibold text-secondary-900">
+                  {pj.peso.toLocaleString('es-AR')} kg
+                </span>
+                <span className="font-mono text-[10.5px] text-secondary-500">
+                  {new Date(pj.fecha + 'T12:00:00').toLocaleDateString('es-AR')}
+                </span>
+                <IconBtn label="Eliminar pesaje" size="sm" variant="danger" onClick={() => deletePesaje(pj.id_pesaje)}>
+                  <Trash2 size={13} />
+                </IconBtn>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {pesoModalAbierto && (
+        <Modal isOpen onClose={() => setPesoModalAbierto(false)} title={`Registrar peso de ${pet.nombre}`}>
+          <form
+            onSubmit={async e => {
+              e.preventDefault();
+              setPesoError(null);
+              const n = Number(nuevoPeso.replace(',', '.'));
+              if (!nuevoPeso.trim() || !Number.isFinite(n) || n <= 0) {
+                setPesoError('Ingresá un peso válido en kg.');
+                return;
+              }
+              try {
+                await addPesaje(pet.id_mascota, nuevoPeso, fechaPeso || undefined);
+                setNuevoPeso(''); setFechaPeso(''); setPesoModalAbierto(false);
+              } catch (err) {
+                setPesoError(err instanceof Error ? err.message : 'No se pudo registrar el peso.');
+              }
+            }}
+            className="space-y-4"
+          >
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className="block text-[12.5px] font-semibold text-secondary-700 mb-1.5">Peso (kg)</span>
+                <input type="number" step="0.01" value={nuevoPeso} onChange={e => setNuevoPeso(e.target.value)} autoFocus
+                       className="w-full bg-surface border border-secondary-300 rounded-[10px] px-3.5 py-2.5 text-[13.5px]
+                                  text-secondary-900 outline-none focus:border-primary-500 transition-colors" />
+              </label>
+              <label className="block">
+                <span className="block text-[12.5px] font-semibold text-secondary-700 mb-1.5">Fecha</span>
+                <input type="date" value={fechaPeso} onChange={e => setFechaPeso(e.target.value)}
+                       className="w-full bg-surface border border-secondary-300 rounded-[10px] px-3.5 py-2.5 text-[13.5px]
+                                  text-secondary-900 outline-none focus:border-primary-500 transition-colors" />
+                <span className="block mt-1 text-[11.5px] text-secondary-500">Si la dejás vacía, se usa hoy.</span>
+              </label>
+            </div>
+            {pesoError && <p className="m-0 text-[13px] text-error-600">{pesoError}</p>}
+            <div className="flex justify-end gap-3 pt-2">
+              <Button type="button" variant="secondary" onClick={() => setPesoModalAbierto(false)}>Cancelar</Button>
+              <Button type="submit" variant="primary">Registrar</Button>
+            </div>
+          </form>
+        </Modal>
+      )}
 
       {isModalOpen && (
         <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={`Nuevo evento para ${pet.nombre}`} size="lg">

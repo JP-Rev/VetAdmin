@@ -5,7 +5,7 @@ import {
   Cliente, Mascota, Turno, Producto, Venta, Pago, HistorialMedico, Raza, Enfermedad, Cirugia, Gasto,
   MascotaEnfermedad, MascotaCirugia, ClienteForm, MascotaForm, TurnoForm, ProductoForm,
   VentaFormValues, EstadoVenta, MetodoPago, TipoEventoHistorial, RazaForm, EnfermedadForm, CirugiaForm, GastoForm, CategoriaGasto, EstadoTurno,
-  DailyCashFlowReportDetails, AttachmentFile, CategoriaProducto, CategoriaProductoForm, Clinica
+  DailyCashFlowReportDetails, AttachmentFile, CategoriaProducto, CategoriaProductoForm, Clinica, Pesaje
 } from '../types';
 
 interface BootstrapResponse {
@@ -22,6 +22,7 @@ interface BootstrapResponse {
   cirugias: Cirugia[];
   mascotaEnfermedades: MascotaEnfermedad[];
   mascotaCirugias: MascotaCirugia[];
+  pesajes: Pesaje[];
   gastos: Gasto[];
   clinica: Clinica;
 }
@@ -39,6 +40,7 @@ interface SupabaseDataContextType {
   surgeries: Cirugia[];
   petDiseases: MascotaEnfermedad[];
   petSurgeries: MascotaCirugia[];
+  pesajes: Pesaje[];
   expenses: Gasto[];
   productCategories: CategoriaProducto[];
   loading: boolean;
@@ -117,6 +119,13 @@ interface SupabaseDataContextType {
   updateSurgery: (surgeryId: string, surgeryData: Partial<CirugiaForm>) => Promise<void>;
   deleteSurgery: (surgeryId: string) => Promise<void>;
 
+  // Weight operations
+  addPesaje: (petId: string, peso: string, fecha?: string, nota?: string) => Promise<Pesaje>;
+  deletePesaje: (pesajeId: string) => Promise<void>;
+  getPesajesByPetId: (petId: string) => Pesaje[];
+  /** Último pesaje registrado, o null si nunca se pesó. */
+  getPesoActual: (petId: string) => Pesaje | null;
+
   // Pet disease/surgery operations
   recordPetDisease: (petId: string, diseaseId: string, date: string, notes: string, customEventDateTime?: string) => Promise<MascotaEnfermedad>;
   recordPetSurgery: (petId: string, surgeryId: string, date: string, notes: string, cost?: number, customEventDateTime?: string) => Promise<MascotaCirugia>;
@@ -155,6 +164,17 @@ export const SupabaseDataProvider: React.FC<{ children: ReactNode }> = ({ childr
   const [surgeries, setSurgeries] = useState<Cirugia[]>([]);
   const [petDiseases, setPetDiseases] = useState<MascotaEnfermedad[]>([]);
   const [petSurgeries, setPetSurgeries] = useState<MascotaCirugia[]>([]);
+  const [pesajes, setPesajes] = useState<Pesaje[]>([]);
+  // Referencia al estado actual: addPet/updatePet necesitan consultar los
+  // pesajes sin quedar atados al valor capturado en el render.
+  const pesajesRef = React.useRef<Pesaje[]>([]);
+  React.useEffect(() => { pesajesRef.current = pesajes; }, [pesajes]);
+
+  const addPesajeInterno = async (petId: string, peso: string, fecha?: string, nota?: string): Promise<Pesaje> => {
+    const nuevo = await apiPost<Pesaje>(`/mascotas/${petId}/pesajes`, { peso, fecha, nota });
+    setPesajes(prev => [...prev, nuevo].sort((a, b) => a.fecha.localeCompare(b.fecha)));
+    return nuevo;
+  };
   const [expenses, setExpenses] = useState<Gasto[]>([]);
   const [productCategories, setProductCategories] = useState<CategoriaProducto[]>([]);
   const [clinica, setClinica] = useState<Clinica>({ nombre: 'Mi Veterinaria', direccion: '', telefono: '', email: '' });
@@ -183,6 +203,7 @@ export const SupabaseDataProvider: React.FC<{ children: ReactNode }> = ({ childr
       setSurgeries(data.cirugias);
       setPetDiseases(data.mascotaEnfermedades);
       setPetSurgeries(data.mascotaCirugias);
+      setPesajes(data.pesajes ?? []);
       setExpenses(data.gastos);
       if (data.clinica) setClinica(data.clinica);
     } catch (err) {
@@ -228,14 +249,29 @@ export const SupabaseDataProvider: React.FC<{ children: ReactNode }> = ({ childr
 
   // Pet operations
   const addPet = async (petData: MascotaForm): Promise<Mascota> => {
-    const newPet = await apiPost<Mascota>('/mascotas', petData);
+    const { peso, ...datosMascota } = petData;
+    const newPet = await apiPost<Mascota>('/mascotas', datosMascota);
     setPets(prev => [...prev, newPet].sort((a, b) => a.nombre.localeCompare(b.nombre)));
+    // El peso no es un campo de la mascota: si vino cargado, queda como su
+    // primer pesaje.
+    if (peso?.trim()) await addPesajeInterno(newPet.id_mascota, peso);
     return newPet;
   };
 
   const updatePet = async (petId: string, petData: Partial<MascotaForm>): Promise<void> => {
-    const updated = await apiPut<Mascota>(`/mascotas/${petId}`, petData);
+    const { peso, ...datosMascota } = petData;
+    const updated = await apiPut<Mascota>(`/mascotas/${petId}`, datosMascota);
     setPets(prev => prev.map(p => p.id_mascota === petId ? updated : p));
+    // Un peso distinto al ultimo registrado es un pesaje nuevo, no una
+    // correccion: asi queda la evolucion.
+    if (peso?.trim()) {
+      const ultimo = pesajesRef.current
+        .filter(x => x.mascota_id === petId)
+        .sort((a, b) => a.fecha.localeCompare(b.fecha))
+        .at(-1);
+      const valor = Number(peso.replace(',', '.'));
+      if (!ultimo || ultimo.peso !== valor) await addPesajeInterno(petId, peso);
+    }
   };
 
   const deletePet = async (petId: string): Promise<void> => {
@@ -493,7 +529,22 @@ export const SupabaseDataProvider: React.FC<{ children: ReactNode }> = ({ childr
     setSurgeries(prev => prev.filter(s => s.id_cirugia !== surgeryId));
   };
 
-  // Pet disease/surgery operations
+  // Weight operations
+  const addPesaje = addPesajeInterno;
+
+  const deletePesaje = async (pesajeId: string): Promise<void> => {
+    await apiDelete(`/pesajes/${pesajeId}`);
+    setPesajes(prev => prev.filter(p => p.id_pesaje !== pesajeId));
+  };
+
+  const getPesajesByPetId = (petId: string): Pesaje[] =>
+    pesajes.filter(p => p.mascota_id === petId).sort((a, b) => a.fecha.localeCompare(b.fecha));
+
+  const getPesoActual = (petId: string): Pesaje | null => {
+    const delPet = getPesajesByPetId(petId);
+    return delPet.length > 0 ? delPet[delPet.length - 1] : null;
+  };
+
   const recordPetDisease = async (petId: string, diseaseId: string, date: string, notes: string, customEventDateTime?: string): Promise<MascotaEnfermedad> => {
     const newPetDisease = await apiPost<MascotaEnfermedad>(`/mascotas/${petId}/enfermedades`, {
       enfermedad_id: diseaseId,
@@ -620,7 +671,7 @@ export const SupabaseDataProvider: React.FC<{ children: ReactNode }> = ({ childr
   };
 
   const value: SupabaseDataContextType = {
-    clients, pets, appointments, products, ventas, payments, medicalHistory, breeds, diseases, surgeries, petDiseases, petSurgeries, expenses, productCategories,
+    clients, pets, appointments, products, ventas, payments, medicalHistory, breeds, diseases, surgeries, petDiseases, petSurgeries, pesajes, expenses, productCategories,
     loading, error,
     addClient, updateClient, deleteClient, getClientById,
     addPet, updatePet, deletePet, getPetsByClientId, getPetById,
@@ -634,6 +685,7 @@ export const SupabaseDataProvider: React.FC<{ children: ReactNode }> = ({ childr
     addBreed, updateBreed, deleteBreed, getBreedById,
     addDisease, updateDisease, deleteDisease,
     addSurgery, updateSurgery, deleteSurgery,
+    addPesaje, deletePesaje, getPesajesByPetId, getPesoActual,
     recordPetDisease, recordPetSurgery,
     addExpense, updateExpense, deleteExpense,
     getDailyCashFlowReport,

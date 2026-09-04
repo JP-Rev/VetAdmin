@@ -130,7 +130,7 @@ export const PetFormComponent: React.FC<PetFormProps> = ({ clientId, initialData
           id_cliente: initialData.id_cliente,
           fecha_nacimiento: initialData.fecha_nacimiento,
           sexo: initialData.sexo,
-          peso: initialData.peso != null ? String(initialData.peso) : '',
+          peso: '', // se carga como un pesaje nuevo, no se edita el anterior
         }
       : { ...initialFormState, id_cliente: clientId } // Ensure clientId is set for new pets
   );
@@ -176,7 +176,9 @@ export const PetFormComponent: React.FC<PetFormProps> = ({ clientId, initialData
       const payload = { ...formData, peso: formData.peso.trim().replace(',', '.') };
        if (initialData) {
         updatePet(initialData.id_mascota, payload);
-        onSave({ ...initialData, ...formData, peso: payload.peso ? Number(payload.peso) : null, lastModified: Date.now() });
+        // `peso` no es un campo de la mascota: el contexto lo registra como pesaje.
+        const { peso: _peso, ...datosMascota } = formData;
+        onSave({ ...initialData, ...datosMascota, lastModified: Date.now() });
       } else {
         const newPet = addPet(payload); // formData already includes id_cliente
         onSave(newPet);
@@ -231,7 +233,7 @@ const PetAction: React.FC<{
 export const ClientsPage: React.FC = () => {
   const {
     clients, getPetsByClientId, deleteClient, breeds, getMedicalHistoryByPetId, getClientById,
-    printContent, diseases, surgeries, petDiseases, petSurgeries,
+    printContent, diseases, surgeries, petDiseases, petSurgeries, getPesoActual,
   } = useSupabaseData();
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [isPetModalOpen, setIsPetModalOpen] = useState(false);
@@ -387,7 +389,7 @@ export const ClientsPage: React.FC = () => {
                 // al texto libre anterior para no dejar de mostrar el dato.
                 const domicilio =
                   [[client.calle, client.numero].filter(Boolean).join(' '), client.localidad]
-                    .filter(Boolean).join(', ') || client.domicilio;
+                    .filter(Boolean).join(', ');
                 return (
                   <React.Fragment key={client.id_cliente}>
                     <Tr onClick={() => toggleExpandClient(client.id_cliente)}>
@@ -472,7 +474,7 @@ export const ClientsPage: React.FC = () => {
                                         <span className="text-[11.5px] text-secondary-500 truncate">
                                           {pet.especie} · {breed?.nombre || 'Raza desconocida'} · {pet.sexo}
                                           {edad && ` · ${edad.label}`}
-                                          {pet.peso != null && ` · ${pet.peso.toLocaleString('es-AR')} kg`}
+                                          {getPesoActual(pet.id_mascota) && ` · ${getPesoActual(pet.id_mascota)!.peso.toLocaleString('es-AR')} kg`}
                                         </span>
                                       </span>
                                       {historyCount > 0 && (

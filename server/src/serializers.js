@@ -10,9 +10,6 @@ export const toCliente = (c) => ({
   calle: c.calle ?? '',
   numero: c.numero ?? '',
   localidad: c.localidad ?? '',
-  // `domicilio` (texto libre) queda solo como respaldo de lo ya cargado; el
-  // frontend usa calle/numero/localidad.
-  domicilio: c.domicilio ?? '',
   createdAt: dateOnly(c.createdAt),
   lastModified: epoch(c.updatedAt),
 })
@@ -31,9 +28,16 @@ export const toMascota = (m) => ({
   id_cliente: m.clienteId ?? '',
   fecha_nacimiento: dateOnly(m.fechaNacimiento),
   sexo: m.sexo,
-  peso: m.peso ?? null,
   createdAt: dateOnly(m.createdAt),
   lastModified: epoch(m.updatedAt),
+})
+
+export const toPesaje = (p) => ({
+  id_pesaje: p.id,
+  mascota_id: p.mascotaId,
+  fecha: dateOnly(p.fecha),
+  peso: p.peso,
+  nota: p.nota ?? '',
 })
 
 export const toEnfermedad = (e) => ({

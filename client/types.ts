@@ -65,8 +65,6 @@ export interface Cliente {
   calle: string;
   numero: string;
   localidad: string;
-  /** Texto libre anterior. Solo respaldo: los datos vivos van en calle/numero/localidad. */
-  domicilio: string;
   createdAt?: string;
   lastModified: number;
 }
@@ -85,10 +83,17 @@ export interface Mascota {
   id_cliente: string; 
   fecha_nacimiento: string; 
   sexo: SexoMascota;
-  /** Peso en kilogramos. null cuando todavía no se registró. */
-  peso: number | null;
   createdAt?: string;
   lastModified: number;
+}
+
+/** Un pesaje puntual. La serie completa es la evolución del peso. */
+export interface Pesaje {
+  id_pesaje: string;
+  mascota_id: string;
+  fecha: string;
+  peso: number;
+  nota: string;
 }
 
 export interface Enfermedad {
@@ -257,9 +262,9 @@ export type ClienteForm = Pick<
   Cliente,
   'nombre' | 'telefono' | 'telefono_alt' | 'email' | 'calle' | 'numero' | 'localidad'
 >;
-// El peso viaja como texto: el input vacío significa "sin registrar", que no
-// es lo mismo que 0.
-export type MascotaForm = Omit<Mascota, 'id_mascota' | 'lastModified' | 'peso'> & {
+// `peso` no es un campo de Mascota sino un pesaje que se crea junto con ella.
+// Viaja como texto: vacío significa "no se pesó", que no es lo mismo que 0.
+export type MascotaForm = Omit<Mascota, 'id_mascota' | 'lastModified'> & {
   peso: string;
 };
 export type TurnoForm = Omit<Turno, 'id_turno' | 'lastModified' | 'estado'>; 

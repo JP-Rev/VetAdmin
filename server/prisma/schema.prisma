@@ -36,11 +36,6 @@ model Cliente {
   numero    String?
   localidad String?
 
-  // Campo libre anterior. Se conserva como respaldo de los datos ya cargados:
-  // el backfill de scripts/backfillDomicilio.js los pasa a calle/numero. Una vez
-  // verificada la migracion en el VPS se puede eliminar esta columna.
-  domicilio String?
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -66,8 +61,6 @@ model Mascota {
   clienteId       String?
   fechaNacimiento DateTime
   sexo            String
-  /// Peso en kilogramos. Opcional: no siempre se pesa en cada visita.
-  peso            Float?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -76,6 +69,7 @@ model Mascota {
 
   turnos              Turno[]
   ventas              Venta[]
+  pesajes             Pesaje[]
   historialMedico     HistorialMedico[]
   mascotaEnfermedades MascotaEnfermedad[]
   mascotaCirugias     MascotaCirugia[]
@@ -228,6 +222,22 @@ model Attachment {
   historial HistorialMedico @relation(fields: [historialId], references: [id], onDelete: Cascade)
 
   @@index([historialId])
+}
+
+/// Un pesaje por visita. El "peso actual" es el mas reciente: guardarlo como
+/// columna en Mascota se pisaba en cada edicion y no dejaba ver la evolucion,
+/// que es justamente el dato clinico util.
+model Pesaje {
+  id        String   @id @default(cuid())
+  mascotaId String
+  fecha     DateTime
+  peso      Float
+  nota      String?
+  createdAt DateTime @default(now())
+
+  mascota Mascota @relation(fields: [mascotaId], references: [id], onDelete: Cascade)
+
+  @@index([mascotaId, fecha])
 }
 
 model MascotaEnfermedad {

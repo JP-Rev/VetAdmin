@@ -46,7 +46,7 @@ const EmptyHint: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 );
 
 export const ConsultationFormComponent: React.FC<ConsultationFormComponentProps> = ({ appointment, onSave, onClose }) => {
-  const { getPetById, getClientById, diseases, surgeries, addMedicalHistoryEvent, recordPetDisease, recordPetSurgery } = useSupabaseData();
+  const { getPetById, getClientById, diseases, surgeries, addMedicalHistoryEvent, recordPetDisease, recordPetSurgery, addPesaje, getPesoActual } = useSupabaseData();
 
   const pet = getPetById(appointment.mascota_id);
   const client = getClientById(appointment.cliente_id);
@@ -64,6 +64,8 @@ export const ConsultationFormComponent: React.FC<ConsultationFormComponentProps>
     attachments: [],
   });
 
+  // El peso se toma en la consulta: queda como un pesaje con la fecha del evento.
+  const [peso, setPeso] = useState('');
   const [tempDisease, setTempDisease] = useState({ diseaseId: '', notes: '' });
   const [tempSurgery, setTempSurgery] = useState({ surgeryId: '', notes: '', cost: '' });
   const [tempVaccination, setTempVaccination] = useState({ vaccineName: '', notes: '' });
@@ -112,16 +114,29 @@ export const ConsultationFormComponent: React.FC<ConsultationFormComponentProps>
     e.preventDefault();
     const { mainDescription, diseases: ds, surgeries: ss, vaccinations: vs, attachments } = formState;
 
-    if (!mainDescription.trim() && !ds.length && !ss.length && !vs.length && !attachments.length) {
+    if (!mainDescription.trim() && !ds.length && !ss.length && !vs.length && !attachments.length && !peso.trim()) {
       setError('Cargá al menos una observación, un registro o un archivo antes de guardar.');
       setTab('consulta');
       return;
+    }
+
+    if (peso.trim()) {
+      const n = Number(peso.replace(',', '.'));
+      if (!Number.isFinite(n) || n <= 0) {
+        setError('El peso tiene que ser un número mayor a cero.');
+        setTab('consulta');
+        return;
+      }
     }
 
     setSaving(true);
     setError(null);
     try {
       const eventDateTime = `${formState.eventDate} ${appointment.hora}`;
+
+      if (peso.trim()) {
+        await addPesaje(appointment.mascota_id, peso, formState.eventDate);
+      }
 
       let description = mainDescription.trim();
       if (!description && attachments.length > 0) {
@@ -160,6 +175,8 @@ export const ConsultationFormComponent: React.FC<ConsultationFormComponentProps>
   };
 
   if (!pet || !client) return <p className="text-secondary-600">Cargando datos de la consulta…</p>;
+
+  const pesoPrevio = getPesoActual(appointment.mascota_id);
 
   const diseaseOptions = diseases.map(d => ({ value: d.id_enfermedad, label: d.nombre })).sort((a, b) => a.label.localeCompare(b.label));
   const surgeryOptions = surgeries.map(s => ({ value: s.id_cirugia, label: s.tipo })).sort((a, b) => a.label.localeCompare(b.label));
@@ -224,16 +241,34 @@ export const ConsultationFormComponent: React.FC<ConsultationFormComponentProps>
 
       <div className="min-h-[240px]">
         {tab === 'consulta' && (
-          <FormField
-            label="Observaciones de la consulta"
-            name="mainDescription"
-            as="textarea"
-            value={formState.mainDescription}
-            onChange={handleInputChange}
-            rows={9}
-            placeholder="Diagnóstico, tratamiento indicado, evolución…"
-            className="mb-0"
-          />
+          <div className="flex flex-col gap-3">
+            <label className="block max-w-[220px]">
+              <span className="block text-[12.5px] font-semibold text-secondary-700 mb-1.5">
+                Peso (kg){pesoPrevio && (
+                  <span className="ml-1.5 font-normal text-secondary-500">
+                    · anterior {pesoPrevio.peso.toLocaleString('es-AR')} kg
+                  </span>
+                )}
+              </span>
+              <input
+                type="number" step="0.01" value={peso}
+                onChange={e => { setPeso(e.target.value); setError(null); }}
+                placeholder="Opcional"
+                className="w-full bg-surface border border-secondary-300 rounded-[10px] px-3.5 py-2.5 text-[13.5px]
+                           text-secondary-900 outline-none focus:border-primary-500 transition-colors"
+              />
+            </label>
+            <FormField
+              label="Observaciones de la consulta"
+              name="mainDescription"
+              as="textarea"
+              value={formState.mainDescription}
+              onChange={handleInputChange}
+              rows={7}
+              placeholder="Diagnóstico, tratamiento indicado, evolución…"
+              className="mb-0"
+            />
+          </div>
         )}
 
         {tab === 'enfermedades' && (

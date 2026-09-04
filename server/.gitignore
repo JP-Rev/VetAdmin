@@ -3,3 +3,4 @@ node_modules/
 *.db
 *.db-journal
 /storage/
+.peso-a-migrar.json

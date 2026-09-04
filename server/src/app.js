@@ -17,6 +17,7 @@ import gastosRouter from './routes/gastos.js'
 import ventasRouter from './routes/ventas.js'
 import historialMedicoRouter from './routes/historialMedico.js'
 import attachmentsRouter from './routes/attachments.js'
+import pesajesRouter from './routes/pesajes.js'
 import clinicaRouter from './routes/clinica.js'
 
 export function createApp() {
@@ -45,6 +46,7 @@ export function createApp() {
   app.use('/api/ventas', requireAuth, ventasRouter)
   app.use('/api/historial-medico', requireAuth, historialMedicoRouter)
   app.use('/api/attachments', requireAuth, attachmentsRouter)
+  app.use('/api/pesajes', requireAuth, pesajesRouter)
   app.use('/api/clinica', requireAuth, clinicaRouter)
 
   app.use(errorHandler)

@@ -14,7 +14,7 @@ import { PetFormComponent } from './ClientsPage'; // Re-using PetFormComponent f
 
 
 export const PetsPage: React.FC = () => {
-  const { pets, clients, getClientById, getBreedById, getMedicalHistoryByPetId } = useSupabaseData();
+  const { pets, clients, getClientById, getBreedById, getMedicalHistoryByPetId, getPesoActual } = useSupabaseData();
   const [isPetModalOpen, setIsPetModalOpen] = useState(false);
   const [editingPet, setEditingPet] = useState<Mascota | undefined>(undefined);
   const [selectedClientIdForNewPet, setSelectedClientIdForNewPet] = useState<string>('');
@@ -276,9 +276,10 @@ export const PetsPage: React.FC = () => {
                       )}
                     </Td>
                     <Td className="font-mono text-[12.5px] whitespace-nowrap">
-                      {pet.peso != null
-                        ? `${pet.peso.toLocaleString('es-AR')} kg`
-                        : <span className="text-secondary-400">—</span>}
+                      {(() => {
+                        const p = getPesoActual(pet.id_mascota);
+                        return p ? `${p.peso.toLocaleString('es-AR')} kg` : <span className="text-secondary-400">—</span>;
+                      })()}
                     </Td>
                     <Td>
                       {pet.ownerId ? (

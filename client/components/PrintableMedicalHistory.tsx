@@ -73,7 +73,9 @@ const DatosTabla: React.FC<{ filas: { k: string; v: string }[] }> = ({ filas }) 
 export const PrintableMedicalHistory: React.FC<PrintableMedicalHistoryProps> = ({
   pet, client, historyEvents, diseases, surgeries, petDiseases, petSurgeries,
 }) => {
-  const { clinica } = useSupabaseData();
+  const { clinica, getPesajesByPetId } = useSupabaseData();
+  const pesajes = getPesajesByPetId(pet.id_mascota);
+  const pesoActual = pesajes.length > 0 ? pesajes[pesajes.length - 1] : null;
 
   const referenciaDe = (event: HistorialMedico): string | null => {
     if (!event.referencia_id) return null;
@@ -113,7 +115,7 @@ export const PrintableMedicalHistory: React.FC<PrintableMedicalHistoryProps> = (
 
   const domicilio =
     [[client.calle, client.numero].filter(Boolean).join(' '), client.localidad]
-      .filter(Boolean).join(', ') || client.domicilio || '—';
+      .filter(Boolean).join(', ') || '—';
 
   const contactoClinica = [clinica.direccion, clinica.telefono, clinica.email]
     .filter(Boolean).join(' · ');
@@ -204,7 +206,7 @@ export const PrintableMedicalHistory: React.FC<PrintableMedicalHistoryProps> = (
                   { k: 'Raza', v: pet.raza_nombre },
                   { k: 'Sexo', v: pet.sexo },
                   { k: 'Nacimiento', v: nacimiento },
-                  { k: 'Peso', v: pet.peso != null ? `${pet.peso.toLocaleString('es-AR')} kg` : 'No registrado' },
+                  { k: 'Peso', v: pesoActual ? `${pesoActual.peso.toLocaleString('es-AR')} kg (${fmtFecha(pesoActual.fecha + 'T00:00:00')})` : 'No registrado' },
                 ]} />
               </td>
               <td style={{ padding: '10pt 12pt', verticalAlign: 'top', width: '50%' }}>
@@ -240,6 +242,45 @@ export const PrintableMedicalHistory: React.FC<PrintableMedicalHistoryProps> = (
             </tr>
           </tbody>
         </table>
+
+        {pesajes.length > 1 && (
+          <>
+            <h2 style={{
+              margin: '0 0 8pt', fontSize: '12pt', fontWeight: 700, letterSpacing: '-0.2pt',
+              paddingBottom: '4pt', borderBottom: '0.75pt solid #d7dedc',
+            }}>
+              Evolución del peso
+            </h2>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '9.5pt', marginBottom: '16pt', breakInside: 'avoid' }}>
+              <thead>
+                <tr>
+                  <th style={{ ...TH, padding: '5pt 8pt 5pt 0' }}>Fecha</th>
+                  <th style={{ ...TH, padding: '5pt 8pt', textAlign: 'right' }}>Peso</th>
+                  <th style={{ ...TH, padding: '5pt 0 5pt 8pt', textAlign: 'right' }}>Variación</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...pesajes].reverse().map((pj, i, arr) => {
+                  const previo = arr[i + 1];
+                  const delta = previo ? Number((pj.peso - previo.peso).toFixed(2)) : null;
+                  return (
+                    <tr key={pj.id_pesaje}>
+                      <td style={{ padding: '3pt 8pt 3pt 0', borderBottom: '0.5pt solid #e8edec', fontFamily: "'JetBrains Mono', ui-monospace, monospace", fontSize: '9pt' }}>
+                        {fmtFecha(pj.fecha + 'T00:00:00')}
+                      </td>
+                      <td style={{ padding: '3pt 8pt', borderBottom: '0.5pt solid #e8edec', textAlign: 'right', fontWeight: 600 }}>
+                        {pj.peso.toLocaleString('es-AR')} kg
+                      </td>
+                      <td style={{ padding: '3pt 0 3pt 8pt', borderBottom: '0.5pt solid #e8edec', textAlign: 'right', color: '#5c6b68', fontFamily: "'JetBrains Mono', ui-monospace, monospace", fontSize: '9pt' }}>
+                        {delta === null ? '—' : `${delta > 0 ? '+' : ''}${delta.toLocaleString('es-AR')} kg`}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </>
+        )}
 
         <h2 style={{
           margin: '0 0 8pt', fontSize: '12pt', fontWeight: 700, letterSpacing: '-0.2pt',
