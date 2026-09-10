@@ -358,9 +358,9 @@ export const AppointmentsPage: React.FC = () => {
                   <tr>
                     <Th>Fecha y hora</Th>
                     <Th>Cliente</Th>
-                    <Th>Mascota</Th>
-                    <Th>Motivo</Th>
-                    <Th>Estado</Th>
+                    <Th hide>Mascota</Th>
+                    <Th hide>Motivo</Th>
+                    <Th hide>Estado</Th>
                     <Th className="text-right">Acciones</Th>
                   </tr>
                 </thead>
@@ -385,15 +385,24 @@ export const AppointmentsPage: React.FC = () => {
                             <span className="font-mono text-[11.5px] text-primary-700 font-semibold">{app.hora}</span>
                           </span>
                         </Td>
-                        <Td className="text-secondary-700">{client?.nombre || '—'}</Td>
-                        <Td>
+                        <Td className="text-secondary-700">
+                          {client?.nombre || '—'}
+                          {/* En el celular mascota, motivo y estado no tienen columna. */}
+                          <span className="sm:hidden block text-[11.5px] text-secondary-500">
+                            {pet?.nombre || 'Sin mascota'} · {app.motivo}
+                          </span>
+                          <span className={`sm:hidden inline-block mt-1 text-[10.5px] font-bold px-2 py-0.5 rounded-full ${badge[app.estado] ?? badge[EstadoTurno.PENDIENTE]}`}>
+                            {app.estado}
+                          </span>
+                        </Td>
+                        <Td hide>
                           <span className="flex items-center gap-2">
                             <SpeciesIcon especie={pet?.especie} size={15} className="text-secondary-500 flex-shrink-0" />
                             <span className="text-secondary-700">{pet?.nombre || '—'}</span>
                           </span>
                         </Td>
-                        <Td className="max-w-xs truncate text-secondary-700">{app.motivo}</Td>
-                        <Td>
+                        <Td hide className="max-w-xs truncate text-secondary-700">{app.motivo}</Td>
+                        <Td hide>
                           <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap ${badge[app.estado] ?? badge[EstadoTurno.PENDIENTE]}`}>
                             {app.estado}
                           </span>

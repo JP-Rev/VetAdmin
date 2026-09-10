@@ -646,12 +646,14 @@ export const SettingsPage: React.FC = () => {
         <h1 className="text-3xl font-bold text-secondary-800">Configuración del Sistema</h1>
       </div>
 
-      <div className="flex border-b border-secondary-300 mb-6 overflow-x-auto">
+      {/* Las solapas se acomodan en varios renglones: en el celular arrastrar la
+          barra para el costado escondía la mitad de las secciones. */}
+      <div className="flex flex-wrap border-b border-secondary-300 mb-6">
         {tabs.map(tab => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key as TabKey)}
-            className={`flex items-center space-x-2 px-4 py-3 -mb-px text-sm font-medium focus:outline-none transition-colors duration-150 whitespace-nowrap
+            className={`flex items-center space-x-2 px-3 sm:px-4 py-3 -mb-px text-sm font-medium focus:outline-none transition-colors duration-150 whitespace-nowrap
               ${activeTab === tab.key 
                 ? 'border-b-2 border-primary-600 text-primary-600' 
                 : 'border-b-2 border-transparent text-secondary-500 hover:text-primary-500 hover:border-primary-300'}`}

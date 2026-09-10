@@ -6,10 +6,11 @@ import { Button } from '../components/common/Button';
 import { Modal } from '../components/Modal';
 import { FormField } from '../components/common/FormField';
 import { PrintableMedicalHistory } from '../components/PrintableMedicalHistory';
-import { FileText, Plus, Pill, Stethoscope, Activity, ArrowLeft, ShieldCheck, Printer, Paperclip, XCircle, FileImage, FileVideo, FileType, Pencil, Trash2, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react';
+import { FileText, Plus, Pill, Stethoscope, Activity, ArrowLeft, ShieldCheck, Printer, Paperclip, XCircle, FileImage, FileVideo, FileType, Pencil, Trash2, ChevronRight, TrendingUp, TrendingDown, CalendarDays } from 'lucide-react';
 import { SpeciesIcon } from '../lib/speciesIcon';
 import { getPetAge } from '../lib/petAge';
 import { PasswordConfirmDialog } from '../components/common/PasswordConfirmDialog';
+import { PetFormComponent } from './ClientsPage';
 
 /**
  * Boton de accion solo con icono: la etiqueta va en title/aria-label y aparece
@@ -21,10 +22,12 @@ const IconBtn: React.FC<{
   children: React.ReactNode;
   variant?: 'default' | 'primary' | 'danger';
   size?: 'sm' | 'md';
-}> = ({ label, onClick, children, variant = 'default', size = 'md' }) => {
+  disabled?: boolean;
+}> = ({ label, onClick, children, variant = 'default', size = 'md', disabled = false }) => {
   const dim = size === 'sm' ? 'w-[26px] h-[26px]' : 'w-[36px] h-[36px]';
-  const tone =
-    variant === 'primary'
+  const tone = disabled
+    ? 'border-secondary-200 text-secondary-300 cursor-not-allowed'
+    : variant === 'primary'
       ? 'bg-primary-700 border-primary-700 text-white hover:bg-primary-800'
       : variant === 'danger'
       ? 'border-error-200 text-error-600 hover:bg-error-50 hover:border-error-300'
@@ -33,6 +36,7 @@ const IconBtn: React.FC<{
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       title={label}
       aria-label={label}
       className={`${dim} ${tone} rounded-[9px] border flex items-center justify-center flex-shrink-0 transition-colors`}
@@ -408,6 +412,7 @@ export const MedicalHistoryPage: React.FC = () => {
   // Colapsados por defecto: la historia clinica se lee de un vistazo y se
   // despliega solo el evento que interesa.
   const [expandidos, setExpandidos] = useState<Set<string>>(new Set());
+  const [editandoMascota, setEditandoMascota] = useState(false);
   const [pesoModalAbierto, setPesoModalAbierto] = useState(false);
   const [nuevoPeso, setNuevoPeso] = useState('');
   const [fechaPeso, setFechaPeso] = useState('');
@@ -548,7 +553,9 @@ export const MedicalHistoryPage: React.FC = () => {
           <h1 className="m-0 text-[22px] font-extrabold tracking-[-0.5px] text-secondary-900 truncate">
             {pet.nombre}
           </h1>
-          <p className="m-0 text-[12.5px] text-secondary-500 truncate">
+          {/* Sin `truncate`: en el celular estos datos se leen en dos renglones
+              en vez de cortarse con puntos suspensivos. */}
+          <p className="m-0 text-[12.5px] text-secondary-500">
             {pet.especie} · {pet.sexo}
             {pesoActual && ` · ${pesoActual.peso.toLocaleString('es-AR')} kg`}
             {edadMascota && (
@@ -566,11 +573,23 @@ export const MedicalHistoryPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-1.5 flex-shrink-0">
-          <IconBtn label="Imprimir historia clínica" onClick={handlePrintMedicalHistory}>
+        {/* Todas las acciones de la mascota viven acá. En el celular bajan a su
+            propia línea en vez de apretar el nombre. */}
+        <div className="w-full sm:w-auto flex items-center justify-end gap-1.5 flex-shrink-0">
+          <IconBtn label="Dar turno" onClick={() => navigate(`/appointments?action=new&clientId=${pet.id_cliente}&petId=${pet.id_mascota}`)}>
+            <CalendarDays size={16} />
+          </IconBtn>
+          <IconBtn label="Editar datos de la mascota" onClick={() => setEditandoMascota(true)}>
+            <Pencil size={16} />
+          </IconBtn>
+          <IconBtn
+            label={historyEvents.length === 0 ? 'Sin eventos para imprimir' : 'Imprimir historia clínica'}
+            disabled={historyEvents.length === 0}
+            onClick={handlePrintMedicalHistory}
+          >
             <Printer size={16} />
           </IconBtn>
-          <IconBtn label="Nuevo evento manual" variant="primary" onClick={() => setIsModalOpen(true)}>
+          <IconBtn label="Agregar consulta al historial" variant="primary" onClick={() => setIsModalOpen(true)}>
             <Plus size={16} />
           </IconBtn>
         </div>
@@ -646,6 +665,17 @@ export const MedicalHistoryPage: React.FC = () => {
           </ul>
         )}
       </section>
+
+      {editandoMascota && (
+        <Modal isOpen onClose={() => setEditandoMascota(false)} title={`Editar datos de ${pet.nombre}`} size="lg">
+          <PetFormComponent
+            clientId={pet.id_cliente}
+            initialData={pet}
+            onSave={() => setEditandoMascota(false)}
+            onClose={() => setEditandoMascota(false)}
+          />
+        </Modal>
+      )}
 
       {pesoModalAbierto && (
         <Modal isOpen onClose={() => setPesoModalAbierto(false)} title={`Registrar peso de ${pet.nombre}`}>

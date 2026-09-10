@@ -543,11 +543,11 @@ export const Ventas: React.FC = () => {
           <TableWrap>
             <thead>
               <tr>
-                <Th>Venta</Th>
+                <Th hide>Venta</Th>
                 <Th>Cliente</Th>
-                <Th>Hora</Th>
+                <Th hide>Hora</Th>
                 <Th>Total</Th>
-                <Th>Estado</Th>
+                <Th hide>Estado</Th>
                 <Th className="text-right">Acciones</Th>
               </tr>
             </thead>
@@ -568,7 +568,7 @@ export const Ventas: React.FC = () => {
                 return (
                   <React.Fragment key={venta.id_venta}>
                     <Tr onClick={() => toggleExpandVenta(venta.id_venta)}>
-                      <Td>
+                      <Td hide>
                         <span className="flex items-center gap-2">
                           <ChevronDown
                             size={15}
@@ -580,16 +580,30 @@ export const Ventas: React.FC = () => {
                         </span>
                       </Td>
                       <Td>
-                        <span className="flex flex-col">
-                          <span className="text-secondary-900">{client?.nombre || '—'}</span>
-                          {pet && <span className="text-[11.5px] text-secondary-500">{pet.nombre}</span>}
+                        <span className="flex items-start gap-2">
+                          <ChevronDown
+                            size={15}
+                            className={`sm:hidden text-secondary-400 flex-shrink-0 mt-0.5 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                          />
+                          <span className="min-w-0">
+                            <span className="block text-secondary-900">{client?.nombre || '—'}</span>
+                            {pet && <span className="block text-[11.5px] text-secondary-500">{pet.nombre}</span>}
+                            {/* En el celular número, hora y estado no tienen columna. */}
+                            <span className="sm:hidden block font-mono text-[11px] text-secondary-500">
+                              #{venta.id_venta.slice(-6)} ·{' '}
+                              {new Date(venta.fecha).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                            <span className={`sm:hidden inline-block mt-1 text-[10.5px] font-bold px-2 py-0.5 rounded-full ${badge[venta.estado] ?? ''}`}>
+                              {venta.estado}
+                            </span>
+                          </span>
                         </span>
                       </Td>
-                      <Td className="font-mono text-[12.5px] whitespace-nowrap">
+                      <Td hide className="font-mono text-[12.5px] whitespace-nowrap">
                         {new Date(venta.fecha).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
                       </Td>
                       <Td className="font-mono text-[12.5px] font-semibold">${venta.total.toFixed(2)}</Td>
-                      <Td>
+                      <Td hide>
                         <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap ${badge[venta.estado] ?? ''}`}>
                           {venta.estado}
                         </span>

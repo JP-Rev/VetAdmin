@@ -128,9 +128,9 @@ export const ExpensesPage: React.FC = () => {
           <TableWrap>
             <thead>
               <tr>
-                <Th>Fecha</Th>
+                <Th hide>Fecha</Th>
                 <Th>Descripción</Th>
-                <Th>Categoría</Th>
+                <Th hide>Categoría</Th>
                 <Th>Monto</Th>
                 <Th className="text-right">Acciones</Th>
               </tr>
@@ -138,11 +138,17 @@ export const ExpensesPage: React.FC = () => {
             <tbody>
               {filteredExpenses.map(expense => (
                 <Tr key={expense.id_gasto}>
-                  <Td className="font-mono text-[12.5px] whitespace-nowrap">
+                  <Td hide className="font-mono text-[12.5px] whitespace-nowrap">
                     {new Date(expense.fecha + 'T00:00:00').toLocaleDateString('es-AR')}
                   </Td>
-                  <Td className="font-medium text-secondary-900 max-w-md truncate" >{expense.descripcion}</Td>
-                  <Td className="text-secondary-600">{expense.categoria}</Td>
+                  <Td className="font-medium text-secondary-900 sm:max-w-md sm:truncate">
+                    {expense.descripcion}
+                    {/* En el celular fecha y categoría no tienen columna propia. */}
+                    <span className="sm:hidden block font-normal text-[11.5px] text-secondary-500">
+                      {new Date(expense.fecha + 'T00:00:00').toLocaleDateString('es-AR')} · {expense.categoria}
+                    </span>
+                  </Td>
+                  <Td hide className="text-secondary-600">{expense.categoria}</Td>
                   <Td className="font-mono text-[12.5px] font-semibold">${expense.monto.toFixed(2)}</Td>
                   <Td>
                     <RowActions>

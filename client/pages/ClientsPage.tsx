@@ -5,8 +5,7 @@ import { Cliente, Mascota, ClienteForm, MascotaForm, Especie, SexoMascota } from
 import { Modal } from '../components/Modal';
 import { Button } from '../components/common/Button';
 import { FormField } from '../components/common/FormField';
-import { PawPrint, Users, CalendarDays, ChevronDown, FileText, MapPin, Stethoscope, Printer, Edit3 } from 'lucide-react';
-import { PrintableMedicalHistory } from '../components/PrintableMedicalHistory';
+import { PawPrint, Users, ChevronDown, ChevronRight, FileText, MapPin, Phone, Mail } from 'lucide-react';
 import { ESPECIES } from '../constants';
 import { SpeciesIcon } from '../lib/speciesIcon';
 import { getPetAge } from '../lib/petAge';
@@ -204,45 +203,18 @@ export const PetFormComponent: React.FC<PetFormProps> = ({ clientId, initialData
   );
 };
 
-
-/** Acción sobre una mascota: ícono + etiqueta, dentro del detalle desplegado. */
-const PetAction: React.FC<{
-  icon: React.ReactNode;
-  label: string;
-  onClick: () => void;
-  disabled?: boolean;
-  disabledHint?: string;
-}> = ({ icon, label, onClick, disabled, disabledHint }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    disabled={disabled}
-    title={disabled ? disabledHint : label}
-    className={`flex items-center gap-2 px-3 py-2 rounded-[9px] border text-[12.5px] font-semibold transition-colors ${
-      disabled
-        ? 'border-secondary-200 text-secondary-400 cursor-not-allowed'
-        : 'border-secondary-200 bg-surface text-secondary-700 hover:bg-secondary-100 hover:text-secondary-900 hover:border-secondary-300'
-    }`}
-  >
-    {icon}
-    {label}
-  </button>
-);
-
 // Main Clients Page
 export const ClientsPage: React.FC = () => {
   const {
     clients, getPetsByClientId, deleteClient, breeds, getMedicalHistoryByPetId, getClientById,
-    printContent, diseases, surgeries, petDiseases, petSurgeries, getPesoActual,
+    getPesoActual,
   } = useSupabaseData();
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [isPetModalOpen, setIsPetModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Cliente | undefined>(undefined);
-  const [editingPet, setEditingPet] = useState<Mascota | undefined>(undefined);
   const [selectedClientIdForPet, setSelectedClientIdForPet] = useState<string | undefined>(undefined);
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedClientId, setExpandedClientId] = useState<string | null>(null);
-  const [expandedPetId, setExpandedPetId] = useState<string | null>(null);
 
   const navigate = useNavigate();
   const { clientId: routeClientId } = useParams<{ clientId?: string }>(); 
@@ -282,38 +254,19 @@ export const ClientsPage: React.FC = () => {
     handleCloseClientModal();
   };
 
-  const handleOpenPetModal = (clientId: string, pet?: Mascota) => {
+  // Desde acá sólo se dan de alta mascotas: editarlas es una acción de su ficha.
+  const handleOpenPetModal = (clientId: string) => {
     setSelectedClientIdForPet(clientId);
-    setEditingPet(pet);
     setIsPetModalOpen(true);
   };
 
   const handleClosePetModal = () => {
     setIsPetModalOpen(false);
-    setEditingPet(undefined);
     setSelectedClientIdForPet(undefined);
   };
 
   const handlePetSaved = () => {
     handleClosePetModal();
-  };
-
-  // Misma salida que el boton de imprimir del historial medico, para no tener
-  // dos formatos distintos de historia clinica.
-  const handlePrintHC = (pet: Mascota, cliente: Cliente) => {
-    const raza = breeds.find(b => b.id_raza === pet.raza_id);
-    printContent(
-      <PrintableMedicalHistory
-        pet={{ ...pet, raza_nombre: raza?.nombre || pet.raza_id }}
-        client={cliente}
-        historyEvents={getMedicalHistoryByPetId(pet.id_mascota)}
-        diseases={diseases}
-        surgeries={surgeries}
-        petDiseases={petDiseases}
-        petSurgeries={petSurgeries}
-      />,
-      `HC-${pet.nombre.replace(/\s+/g, '_')}-${cliente.nombre.split(' ')[0]}.pdf`
-    );
   };
 
   const handleDeleteClient = (id: string) => {
@@ -375,9 +328,9 @@ export const ClientsPage: React.FC = () => {
             <thead>
               <tr>
                 <Th>Cliente</Th>
-                <Th>Teléfono</Th>
-                <Th>Email</Th>
-                <Th>Mascotas</Th>
+                <Th hide>Teléfono</Th>
+                <Th hide>Email</Th>
+                <Th hide>Mascotas</Th>
                 <Th className="text-right">Acciones</Th>
               </tr>
             </thead>
@@ -394,15 +347,24 @@ export const ClientsPage: React.FC = () => {
                   <React.Fragment key={client.id_cliente}>
                     <Tr onClick={() => toggleExpandClient(client.id_cliente)}>
                       <Td>
-                        <span className="flex items-center gap-2">
+                        <span className="flex items-start gap-2">
                           <ChevronDown
                             size={15}
-                            className={`text-secondary-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                            className={`text-secondary-400 flex-shrink-0 mt-0.5 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
                           />
-                          <span className="font-semibold text-secondary-900">{client.nombre}</span>
+                          <span className="min-w-0">
+                            <span className="block font-semibold text-secondary-900">{client.nombre}</span>
+                            {/* Lo que en el celular no tiene columna propia viaja acá abajo.
+                                Sin `truncate`: el nowrap agrandaría el ancho mínimo de la
+                                columna y volvería a empujar las acciones fuera de pantalla. */}
+                            <span className="sm:hidden block text-[11.5px] text-secondary-500">
+                              {client.telefono || 'Sin teléfono'} · {clientPets.length}{' '}
+                              {clientPets.length === 1 ? 'mascota' : 'mascotas'}
+                            </span>
+                          </span>
                         </span>
                       </Td>
-                      <Td>
+                      <Td hide>
                         <span className="flex flex-col">
                           <span className="font-mono text-[12.5px]">{client.telefono || '—'}</span>
                           {client.telefono_alt && (
@@ -412,8 +374,8 @@ export const ClientsPage: React.FC = () => {
                           )}
                         </span>
                       </Td>
-                      <Td className="text-secondary-600">{client.email || '—'}</Td>
-                      <Td>
+                      <Td hide className="text-secondary-600">{client.email || '—'}</Td>
+                      <Td hide>
                         <span className="font-mono text-[11.5px] font-semibold bg-primary-50 text-primary-700 px-2 py-1 rounded-full">
                           {clientPets.length}
                         </span>
@@ -435,11 +397,28 @@ export const ClientsPage: React.FC = () => {
 
                     {isExpanded && (
                       <tr className="border-b border-secondary-100">
-                        <td colSpan={5} className="px-5 py-4 bg-secondary-50">
+                        <td colSpan={5} className="px-3 sm:px-5 py-4 bg-secondary-50">
+                          {/* Los datos de contacto que en el celular no entran como
+                              columna se leen acá, sin desplazar la pantalla. */}
+                          <ul className="sm:hidden flex flex-col gap-1.5 m-0 mb-3 p-0 list-none">
+                            {client.telefono_alt && (
+                              <li className="flex items-center gap-2 text-[12.5px] text-secondary-600">
+                                <Phone size={14} className="text-secondary-500 flex-shrink-0" />
+                                <span className="font-mono break-all">{client.telefono_alt}</span>
+                                <span className="text-[11px] text-secondary-400">alt.</span>
+                              </li>
+                            )}
+                            {client.email && (
+                              <li className="flex items-center gap-2 text-[12.5px] text-secondary-600">
+                                <Mail size={14} className="text-secondary-500 flex-shrink-0" />
+                                <span className="break-all">{client.email}</span>
+                              </li>
+                            )}
+                          </ul>
                           {domicilio && (
-                            <p className="m-0 mb-3 flex items-center gap-2 text-[12.5px] text-secondary-600">
-                              <MapPin size={14} className="text-secondary-500 flex-shrink-0" />
-                              {domicilio}
+                            <p className="m-0 mb-3 flex items-start gap-2 text-[12.5px] text-secondary-600">
+                              <MapPin size={14} className="text-secondary-500 flex-shrink-0 mt-0.5" />
+                              <span className="min-w-0 break-words">{domicilio}</span>
                             </p>
                           )}
                           {clientPets.length > 0 ? (
@@ -448,33 +427,30 @@ export const ClientsPage: React.FC = () => {
                                 const breed = breeds.find(b => b.id_raza === pet.raza_id);
                                 const historyCount = getMedicalHistoryByPetId(pet.id_mascota).length;
                                 const edad = getPetAge(pet.fecha_nacimiento);
-                                const petAbierta = expandedPetId === pet.id_mascota;
+                                const peso = getPesoActual(pet.id_mascota);
                                 return (
-                                  <li
-                                    key={pet.id_mascota}
-                                    className="bg-surface border border-secondary-200 rounded-[10px] overflow-hidden"
-                                  >
-                                    {/* La fila solo identifica a la mascota; las acciones viven en el
-                                        detalle, donde hay lugar para que lleven su etiqueta. */}
+                                  <li key={pet.id_mascota}>
+                                    {/* La fila no despliega nada: lleva a la ficha de la mascota,
+                                        que es donde viven el historial y todas las acciones. */}
                                     <button
                                       type="button"
-                                      onClick={() => setExpandedPetId(petAbierta ? null : pet.id_mascota)}
-                                      aria-expanded={petAbierta}
-                                      className="w-full flex items-center gap-3 px-3.5 py-2.5 text-left hover:bg-secondary-50 transition-colors"
+                                      onClick={() => navigate(`/pets/${pet.id_mascota}/history`)}
+                                      title={`Abrir la ficha de ${pet.nombre}`}
+                                      className="w-full flex items-center gap-3 px-3.5 py-2.5 text-left bg-surface border
+                                                 border-secondary-200 rounded-[10px] hover:bg-secondary-50
+                                                 hover:border-secondary-300 transition-colors"
                                     >
-                                      <ChevronDown
-                                        size={14}
-                                        className={`text-secondary-400 flex-shrink-0 transition-transform ${petAbierta ? 'rotate-180' : ''}`}
-                                      />
                                       <span className="w-8 h-8 rounded-lg bg-secondary-100 text-secondary-600 flex items-center justify-center flex-shrink-0">
                                         <SpeciesIcon especie={pet.especie} size={16} />
                                       </span>
                                       <span className="flex-1 min-w-0 flex flex-col">
                                         <span className="text-[13px] font-semibold text-secondary-900 truncate">{pet.nombre}</span>
-                                        <span className="text-[11.5px] text-secondary-500 truncate">
+                                        {/* Sin `truncate`: dentro de una tabla el nowrap fija un ancho
+                                            mínimo enorme y saca la fila de la pantalla del celular. */}
+                                        <span className="text-[11.5px] text-secondary-500">
                                           {pet.especie} · {breed?.nombre || 'Raza desconocida'} · {pet.sexo}
                                           {edad && ` · ${edad.label}`}
-                                          {getPesoActual(pet.id_mascota) && ` · ${getPesoActual(pet.id_mascota)!.peso.toLocaleString('es-AR')} kg`}
+                                          {peso && ` · ${peso.peso.toLocaleString('es-AR')} kg`}
                                         </span>
                                       </span>
                                       {historyCount > 0 && (
@@ -485,39 +461,8 @@ export const ClientsPage: React.FC = () => {
                                           <FileText size={12} />{historyCount}
                                         </span>
                                       )}
+                                      <ChevronRight size={15} className="text-secondary-400 flex-shrink-0" />
                                     </button>
-
-                                    {petAbierta && (
-                                      <div className="border-t border-secondary-200 bg-secondary-50 px-3.5 py-3 flex flex-wrap gap-2">
-                                        <PetAction
-                                          icon={<FileText size={15} />}
-                                          label="Ver historial"
-                                          onClick={() => navigate(`/pets/${pet.id_mascota}/history`)}
-                                        />
-                                        <PetAction
-                                          icon={<Stethoscope size={15} />}
-                                          label="Agregar consulta"
-                                          onClick={() => navigate(`/pets/${pet.id_mascota}/history?action=new`)}
-                                        />
-                                        <PetAction
-                                          icon={<CalendarDays size={15} />}
-                                          label="Dar turno"
-                                          onClick={() => navigate(`/appointments?action=new&clientId=${client.id_cliente}&petId=${pet.id_mascota}`)}
-                                        />
-                                        <PetAction
-                                          icon={<Edit3 size={15} />}
-                                          label="Editar"
-                                          onClick={() => handleOpenPetModal(client.id_cliente, pet)}
-                                        />
-                                        <PetAction
-                                          icon={<Printer size={15} />}
-                                          label="Imprimir HC"
-                                          onClick={() => handlePrintHC(pet, client)}
-                                          disabled={historyCount === 0}
-                                          disabledHint="Sin eventos para imprimir"
-                                        />
-                                      </div>
-                                    )}
                                   </li>
                                 );
                               })}
@@ -551,8 +496,8 @@ export const ClientsPage: React.FC = () => {
       )}
 
       {isPetModalOpen && selectedClientIdForPet && (
-        <Modal isOpen={isPetModalOpen} onClose={handleClosePetModal} title={editingPet ? 'Editar Mascota' : 'Nueva Mascota'}>
-          <PetFormComponent clientId={selectedClientIdForPet} initialData={editingPet} onSave={handlePetSaved} onClose={handleClosePetModal} />
+        <Modal isOpen={isPetModalOpen} onClose={handleClosePetModal} title="Nueva Mascota">
+          <PetFormComponent clientId={selectedClientIdForPet} onSave={handlePetSaved} onClose={handleClosePetModal} />
         </Modal>
       )}
     </div>

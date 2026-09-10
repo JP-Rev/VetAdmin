@@ -82,13 +82,17 @@ export const DataCard: React.FC<DataCardProps> = ({
         </p>
       </div>
       {actionLabel && onAction && (
+        // En el celular el texto del botón se come el ancho del encabezado: queda
+        // sólo el ícono, con la etiqueta en title/aria-label.
         <button
           onClick={onAction}
+          title={actionLabel}
+          aria-label={actionLabel}
           className="flex items-center gap-2 bg-primary-700 hover:bg-primary-800 text-white border-0
-                     rounded-[10px] px-3.5 py-2.5 text-[13px] font-bold transition-colors flex-shrink-0"
+                     rounded-[10px] px-2.5 sm:px-3.5 py-2.5 text-[13px] font-bold transition-colors flex-shrink-0"
         >
           <Plus size={15} />
-          {actionLabel}
+          <span className="hidden sm:inline">{actionLabel}</span>
         </button>
       )}
     </div>
@@ -96,24 +100,40 @@ export const DataCard: React.FC<DataCardProps> = ({
   </Card>
 );
 
-/** Tabla con scroll horizontal propio, para que la página nunca desborde. */
+/**
+ * Tabla que entra en el ancho disponible. No lleva ancho mínimo: en el celular
+ * la tabla se angosta y las columnas secundarias se ocultan con `hide` en su
+ * Th/Td, así no hay que arrastrar la pantalla para el costado. El
+ * `overflow-x-auto` queda de red por si alguna celda no puede achicarse más.
+ */
 export const TableWrap: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div className="overflow-x-auto">
-    <table className="w-full min-w-[640px] text-left">{children}</table>
+    <table className="w-full text-left">{children}</table>
   </div>
 );
 
-export const Th: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
+/** `hide`: columna secundaria, no se muestra en pantallas de celular. */
+export const Th: React.FC<{ children: React.ReactNode; className?: string; hide?: boolean }> = ({
+  children, className = '', hide = false,
+}) => (
   <th
-    className={`px-5 py-3 font-mono text-[10px] tracking-[0.14em] uppercase font-semibold
-                text-secondary-500 bg-secondary-50 whitespace-nowrap ${className}`}
+    className={`px-2.5 sm:px-5 py-3 font-mono text-[10px] tracking-[0.14em] uppercase font-semibold
+                text-secondary-500 bg-secondary-50 whitespace-nowrap
+                ${hide ? 'hidden sm:table-cell' : ''} ${className}`}
   >
     {children}
   </th>
 );
 
-export const Td: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-  <td className={`px-5 py-3.5 text-[13.5px] text-secondary-800 align-middle ${className}`}>{children}</td>
+export const Td: React.FC<{ children: React.ReactNode; className?: string; hide?: boolean }> = ({
+  children, className = '', hide = false,
+}) => (
+  <td
+    className={`px-2.5 sm:px-5 py-3.5 text-[13.5px] text-secondary-800 align-middle
+                ${hide ? 'hidden sm:table-cell' : ''} ${className}`}
+  >
+    {children}
+  </td>
 );
 
 export const Tr: React.FC<{ children: React.ReactNode; onClick?: () => void }> = ({ children, onClick }) => (
@@ -152,8 +172,9 @@ export const IconAction: React.FC<IconActionProps> = ({ onClick, label, variant 
   </button>
 );
 
+/** En el celular los botones bajan a un segundo renglón en vez de estirar la fila. */
 export const RowActions: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="flex items-center gap-1.5 justify-end">{children}</div>
+  <div className="flex flex-wrap items-center gap-1.5 justify-end">{children}</div>
 );
 
 /** Íconos estándar de acción, para que el significado sea el mismo en toda la app. */

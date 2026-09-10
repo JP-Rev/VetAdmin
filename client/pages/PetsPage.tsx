@@ -4,11 +4,11 @@ import { useSupabaseData } from '../contexts/SupabaseDataContext';
 import { Mascota } from '../types';
 import { Modal } from '../components/Modal';
 import { Button } from '../components/common/Button';
-import { FileText, PawPrint, Users, Plus, Search, ShoppingCart } from 'lucide-react';
+import { FileText, PawPrint, Users, Plus, Search, ShoppingCart, ChevronRight } from 'lucide-react';
 import { SpeciesIcon } from '../lib/speciesIcon';
 import { getPetAge } from '../lib/petAge';
 import {
-  FilterCard, DataCard, TableWrap, Th, Td, Tr, RowActions, IconAction, EditIcon, EmptyState,
+  FilterCard, DataCard, TableWrap, Th, Td, Tr, RowActions, IconAction, EmptyState,
 } from '../components/common/ListLayout';
 import { PetFormComponent } from './ClientsPage'; // Re-using PetFormComponent from ClientsPage
 
@@ -16,29 +16,21 @@ import { PetFormComponent } from './ClientsPage'; // Re-using PetFormComponent f
 export const PetsPage: React.FC = () => {
   const { pets, clients, getClientById, getBreedById, getMedicalHistoryByPetId, getPesoActual } = useSupabaseData();
   const [isPetModalOpen, setIsPetModalOpen] = useState(false);
-  const [editingPet, setEditingPet] = useState<Mascota | undefined>(undefined);
   const [selectedClientIdForNewPet, setSelectedClientIdForNewPet] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
   const [clientSearchTerm, setClientSearchTerm] = useState('');
   const navigate = useNavigate();
 
-  const handleOpenPetModal = (pet?: Mascota) => {
-    if (pet) {
-      // Editing existing pet
-      setEditingPet(pet);
-      setSelectedClientIdForNewPet('');
-    } else {
-      // Creating new pet
-      setEditingPet(undefined);
-      setSelectedClientIdForNewPet('');
-      setClientSearchTerm(''); // Reset client search when opening modal
-    }
+  // Desde el listado sólo se dan de alta mascotas: editarlas es una acción de
+  // su ficha, a la que se llega tocando la fila.
+  const handleOpenPetModal = () => {
+    setSelectedClientIdForNewPet('');
+    setClientSearchTerm('');
     setIsPetModalOpen(true);
   };
 
   const handleClosePetModal = () => {
     setIsPetModalOpen(false);
-    setEditingPet(undefined);
     setSelectedClientIdForNewPet('');
     setClientSearchTerm('');
   };
@@ -102,20 +94,11 @@ export const PetsPage: React.FC = () => {
         <Modal 
           isOpen={isPetModalOpen} 
           onClose={handleClosePetModal} 
-          title={editingPet ? `Editar Mascota: ${editingPet.nombre}` : 'Nueva Mascota'}
+          title="Nueva Mascota"
           size="lg"
         >
-          {editingPet ? (
-            // Editing existing pet - use existing client ID
-            <PetFormComponent 
-              clientId={editingPet.id_cliente}
-              initialData={editingPet} 
-              onSave={handlePetSaved} 
-              onClose={handleClosePetModal} 
-            />
-          ) : (
-            // Creating new pet - need to select client first
-            <div className="space-y-4">
+          {/* Alta en dos pasos: primero el propietario, después la mascota. */}
+          <div className="space-y-4">
               {!selectedClientIdForNewPet ? (
                 // Step 1: Select client with search filter
                 <div className="space-y-4">
@@ -222,8 +205,7 @@ export const PetsPage: React.FC = () => {
                   />
                 </div>
               )}
-            </div>
-          )}
+          </div>
         </Modal>
       )}
 
@@ -239,11 +221,11 @@ export const PetsPage: React.FC = () => {
             <thead>
               <tr>
                 <Th>Mascota</Th>
-                <Th>Especie</Th>
-                <Th>Raza</Th>
-                <Th>Edad</Th>
-                <Th>Peso</Th>
-                <Th>Propietario</Th>
+                <Th hide>Especie</Th>
+                <Th hide>Raza</Th>
+                <Th hide>Edad</Th>
+                <Th hide>Peso</Th>
+                <Th hide>Propietario</Th>
                 <Th className="text-right">Acciones</Th>
               </tr>
             </thead>
@@ -251,19 +233,30 @@ export const PetsPage: React.FC = () => {
               {filteredPets.map(pet => {
                 const historyCount = getMedicalHistoryByPetId(pet.id_mascota).length;
                 const edad = getPetAge(pet.fecha_nacimiento);
+                const peso = getPesoActual(pet.id_mascota);
                 return (
-                  <Tr key={pet.id_mascota}>
+                  // La fila entera lleva a la ficha, igual que desde el cliente.
+                  <Tr key={pet.id_mascota} onClick={() => navigate(`/pets/${pet.id_mascota}/history`)}>
                     <Td>
-                      <span className="flex items-center gap-2.5">
+                      <span className="flex items-start gap-2.5">
                         <span className="w-8 h-8 rounded-lg bg-secondary-100 text-secondary-600 flex items-center justify-center flex-shrink-0">
                           <SpeciesIcon especie={pet.especie} size={16} />
                         </span>
-                        <span className="font-semibold text-secondary-900">{pet.nombre}</span>
+                        <span className="min-w-0">
+                          <span className="block font-semibold text-secondary-900">{pet.nombre}</span>
+                          {/* En el celular no hay columnas para esto, así que va acá. */}
+                          <span className="sm:hidden block text-[11.5px] text-secondary-500">
+                            {pet.especie} · {pet.breedName}
+                            {edad && ` · ${edad.short}`}
+                            {peso && ` · ${peso.peso.toLocaleString('es-AR')} kg`}
+                            {` · ${pet.ownerName}`}
+                          </span>
+                        </span>
                       </span>
                     </Td>
-                    <Td className="text-secondary-600">{pet.especie}</Td>
-                    <Td className="text-secondary-600">{pet.breedName}</Td>
-                    <Td>
+                    <Td hide className="text-secondary-600">{pet.especie}</Td>
+                    <Td hide className="text-secondary-600">{pet.breedName}</Td>
+                    <Td hide>
                       {edad ? (
                         <span
                           className="font-mono text-[12.5px] text-secondary-700 whitespace-nowrap"
@@ -275,15 +268,13 @@ export const PetsPage: React.FC = () => {
                         <span className="text-secondary-400">—</span>
                       )}
                     </Td>
-                    <Td className="font-mono text-[12.5px] whitespace-nowrap">
-                      {(() => {
-                        const p = getPesoActual(pet.id_mascota);
-                        return p ? `${p.peso.toLocaleString('es-AR')} kg` : <span className="text-secondary-400">—</span>;
-                      })()}
+                    <Td hide className="font-mono text-[12.5px] whitespace-nowrap">
+                      {peso ? `${peso.peso.toLocaleString('es-AR')} kg` : <span className="text-secondary-400">—</span>}
                     </Td>
-                    <Td>
+                    <Td hide>
                       {pet.ownerId ? (
-                        <Link to={`/clients/${pet.ownerId}`} className="text-primary-700 hover:underline font-medium">
+                        <Link to={`/clients/${pet.ownerId}`} onClick={e => e.stopPropagation()}
+                              className="text-primary-700 hover:underline font-medium">
                           {pet.ownerName}
                         </Link>
                       ) : (
@@ -291,25 +282,19 @@ export const PetsPage: React.FC = () => {
                       )}
                     </Td>
                     <Td>
+                      {/* Historial y edición son acciones de la ficha, a la que ya
+                          lleva la fila. Acá queda sólo lo que no vive allá. */}
                       <RowActions>
-                        <Link to={`/pets/${pet.id_mascota}/history`} title={`Historial médico (${historyCount})`}>
-                          <span className="relative w-[34px] h-[34px] rounded-[9px] border border-secondary-200 text-secondary-600
-                                           hover:bg-secondary-100 hover:text-secondary-900 flex items-center justify-center transition-colors">
-                            <FileText size={15} />
-                            {historyCount > 0 && (
-                              <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-primary-700 text-white
-                                               font-mono text-[9px] font-bold flex items-center justify-center">
-                                {historyCount}
-                              </span>
-                            )}
-                          </span>
-                        </Link>
+                        <span
+                          title={`${historyCount} evento(s) en la historia clínica`}
+                          className="flex items-center gap-1 font-mono text-[10.5px] text-secondary-500"
+                        >
+                          <FileText size={12} />{historyCount}
+                        </span>
                         <IconAction label="Crear venta para esta mascota" onClick={() => handleCreateSaleForPet(pet)}>
                           <ShoppingCart size={15} />
                         </IconAction>
-                        <IconAction label="Editar mascota" onClick={() => handleOpenPetModal(pet)}>
-                          <EditIcon />
-                        </IconAction>
+                        <ChevronRight size={15} className="text-secondary-400 flex-shrink-0" />
                       </RowActions>
                     </Td>
                   </Tr>

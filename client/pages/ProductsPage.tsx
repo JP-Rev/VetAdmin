@@ -179,8 +179,8 @@ export const ProductsPage: React.FC = () => {
             <thead>
               <tr>
                 <Th>Producto</Th>
-                <Th>Categoría</Th>
-                <Th>Stock</Th>
+                <Th hide>Categoría</Th>
+                <Th hide>Stock</Th>
                 <Th>Precio</Th>
                 <Th className="text-right">Acciones</Th>
               </tr>
@@ -197,9 +197,16 @@ export const ProductsPage: React.FC = () => {
 
                 return (
                   <Tr key={product.id_producto}>
-                    <Td className="font-semibold text-secondary-900">{product.nombre}</Td>
-                    <Td className="text-secondary-600">{categoryName || '—'}</Td>
-                    <Td>
+                    <Td className="font-semibold text-secondary-900">
+                      {product.nombre}
+                      {/* En el celular la categoría no tiene columna propia. */}
+                      <span className="sm:hidden block font-normal text-[11.5px] text-secondary-500">
+                        {categoryName || 'Sin categoría'} ·{' '}
+                        <span className={stockClass}>{product.stock} u.</span>
+                      </span>
+                    </Td>
+                    <Td hide className="text-secondary-600">{categoryName || '—'}</Td>
+                    <Td hide>
                       <span className={`inline-flex items-center gap-1.5 font-mono text-[12.5px] ${stockClass}`}>
                         {product.stock <= warningStockThreshold && <AlertTriangle size={13} />}
                         {product.stock} u.
