@@ -12,6 +12,12 @@ model User {
   email        String   @unique
   passwordHash String
   createdAt    DateTime @default(now())
+
+  // Recuperacion de contraseña por mail. El token se guarda hasheado: el
+  // valor crudo existe solo en el link que se manda por mail, nunca en la
+  // base. Ambos campos se limpian al consumirlo.
+  resetTokenHash      String?
+  resetTokenExpiresAt DateTime?
 }
 
 // Singleton: siempre la fila con id = "default".

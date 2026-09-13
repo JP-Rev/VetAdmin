@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { LoginForm } from './LoginForm';
+import { LoginForm, leerTokenDeReset } from './LoginForm';
 import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
@@ -22,7 +22,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     );
   }
 
-  if (!user) {
+  // Con un token de recuperación en la URL se muestra el formulario aunque la
+  // sesión siga abierta: es el caso de quien pidió el link desde otro
+  // dispositivo y abre el mail en el que ya tenía la sesión iniciada.
+  if (!user || leerTokenDeReset()) {
     return <LoginForm />;
   }
 

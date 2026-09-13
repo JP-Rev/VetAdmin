@@ -1,7 +1,9 @@
 import express from 'express'
 import cors from 'cors'
 import cookieParser from 'cookie-parser'
-import { login, logout, me, requireAuth, attachUserIfPresent } from './auth.js'
+import {
+  login, logout, me, requireAuth, attachUserIfPresent, forgotPassword, resetPassword,
+} from './auth.js'
 import { errorHandler } from './http.js'
 
 import bootstrapRouter from './routes/bootstrap.js'
@@ -32,6 +34,10 @@ export function createApp() {
   app.post('/api/auth/login', login)
   app.post('/api/auth/logout', logout)
   app.get('/api/auth/me', attachUserIfPresent, me)
+  // Sin requireAuth a proposito: a estas dos se llega justamente cuando no se
+  // puede iniciar sesion.
+  app.post('/api/auth/forgot-password', forgotPassword)
+  app.post('/api/auth/reset-password', resetPassword)
 
   app.use('/api/bootstrap', requireAuth, bootstrapRouter)
   app.use('/api/clientes', requireAuth, clientesRouter)

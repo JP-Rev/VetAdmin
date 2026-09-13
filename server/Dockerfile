@@ -21,6 +21,11 @@ COPY src ./src
 # datos en produccion (ver scripts/README.md).
 COPY scripts ./scripts
 
+# Logo de FrodoSoft para el cuerpo de los mails del sistema: se adjunta inline
+# con cid: (ver sendSystemEmail en src/mailer.js). Sin esta linea el mail sale
+# igual pero sin imagen.
+COPY assets ./assets
+
 EXPOSE 4000
 
 CMD ["sh", "-c", "npx prisma db push && npm start"]

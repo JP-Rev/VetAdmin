@@ -7,7 +7,7 @@ Contexto para retomar este proyecto en sesiones futuras. Para arquitectura/stack
 Este repo corre en el mismo VPS que Facturacion-Web y Kinetic (`vetadmin.frodosoft.com.ar`, instancia única por ahora, ver `docker-compose.yml` en la raíz). La documentación operativa del servidor (Nginx, Cloudflare, backups, incidentes) vive en el repo `infra-notes-vps-hostinger`, no acá — es la fuente de verdad si necesitás saber algo del estado real del servidor:
 
 - `proyectos/vet-admin.md` — estado de este proyecto en el VPS.
-- `vps/mail.md` — relay SMTP compartido (Mailgun) para mandar mail sin guardar credenciales propias. **Aplica directamente acá**: Vet-Admin ya tiene auth real (`server/src/auth.js`, JWT en cookie httpOnly + `User.passwordHash`), le faltan los endpoints de recuperación de contraseña + el mailer. **Leer ese documento antes de tocar nada de mailer**: el mecanismo es una red Docker compartida (`mail_net`, host SMTP `mail`, puerto `25`), y hay dos detalles que ya costaron horas de debug en otra app — `tls: { rejectUnauthorized: false }` es obligatorio (el relay usa certificado autofirmado), y el remitente tiene que ser `@mail.frodosoft.com.ar`. Kinetic ya implementó todo esto el 23/08, sirve de referencia.
+- `vps/mail.md` — relay SMTP compartido (Mailgun) para mandar mail sin guardar credenciales propias. **Leer ese documento antes de tocar nada de mailer.** Acá ya se usa para la recuperación de contraseña (ver sección propia más abajo).
 - `vps/backups.md` — esquema de backups del VPS. Ver la convención de storage abajo.
 
 ## Storage: todo bajo `/srv/storage/vetadmin/`
@@ -20,27 +20,31 @@ Esto motivó un cambio (28/08): `STORAGE_ROOT_HOST` tenía como default `../stor
 
 ⚠️ **Convención del VPS**: si este proyecto migra a multiempresa (un stack Docker por cliente, como ya hace Kinetic), cualquier `docker-compose.yml` por cliente nuevo necesita un `name:` explícito (`vetadmin-<slug>`) para evitar colisión de nombre de proyecto con otra app del mismo VPS — ver incidente real en `infra-notes-vps-hostinger/plan-multiempresa-y-backups.md` sección 0b.
 
-## Pendientes
+## Recuperación de contraseña por mail
 
-### Recuperación de contraseña por mail (no implementado)
+Implementada (13/09), calcada de Facturacion-Web. `POST /api/auth/forgot-password`
+manda el link y `POST /api/auth/reset-password` lo consume; ambas van **antes**
+de `requireAuth` en `server/src/app.js`, porque justamente se usan cuando no se
+puede iniciar sesión. El token vive 1 hora, es de un solo uso y en la base queda
+sólo su sha256 (`User.resetTokenHash`): ni con la base en la mano se puede
+fabricar un link. `forgot-password` responde 200 exista o no el email, para no
+filtrar qué direcciones están registradas.
 
-Hoy la única forma de que alguien vuelva a entrar si se olvidó la clave es
-cambiarle el `passwordHash` a mano en la base. Falta:
+El link llega como `?reset=<token>` **antes del hash** (`https://host/?reset=…#/`)
+porque el front usa HashRouter; `LoginForm` lo lee de `window.location.search`.
 
-- `POST /api/auth/forgot-password` — genera un token de un solo uso con
-  vencimiento y manda el mail. Responder siempre 200, exista o no el usuario,
-  para no filtrar qué direcciones están registradas.
-- `POST /api/auth/reset-password` — valida el token, reemplaza el hash
-  (`bcryptjs`, como el resto de `server/src/auth.js`) y lo invalida.
-- Tabla para los tokens (o columnas en `User`), y la pantalla en el front.
+🔴 **El mail sale por el relay SMTP compartido del VPS, no por credenciales
+propias** (`server/src/mailer.js`). La fuente de verdad es `vps/mail.md` en
+`infra-notes-vps-hostinger`. Tres cosas que no se pueden cambiar sin romperlo:
 
-🔴 **Antes de escribir una línea del mailer, leer `vps/mail.md` en
-`infra-notes-vps-hostinger`.** Se manda por el relay SMTP compartido del VPS,
-no por credenciales propias: red Docker `mail_net`, host `mail`, puerto `25`.
-Dos detalles que ya costaron horas de debug en otra app —
-`tls: { rejectUnauthorized: false }` es obligatorio porque el relay usa
-certificado autofirmado, y el remitente tiene que ser `@mail.frodosoft.com.ar`.
-Kinetic lo implementó entero el 23/08: sirve de referencia directa.
+- El servicio `server` tiene que estar en la red Docker `mail_net` (ya está en
+  `docker-compose.yml`, como `external: true`). Si esa red no existe en el VPS:
+  `docker network create mail_net`. Sin eso el mail no sale.
+- `tls: { rejectUnauthorized: false }` es obligatorio: el relay usa certificado
+  autofirmado. Es seguro porque ese salto es contenedor a contenedor dentro de
+  `mail_net`; el tramo que sí viaja por internet lo cifra y valida Postfix.
+- El remitente tiene que ser `@mail.frodosoft.com.ar`, único dominio verificado
+  en Mailgun.
 
 ## Incidentes
 

@@ -27,6 +27,11 @@ services:
     # `docker compose run --rm --service-ports server`.
     networks:
       - vetadmin_net
+      # Red compartida con el relay SMTP (/srv/docker/mail): el mailer le habla
+      # contenedor a contenedor, host "mail", puerto 25. Sin esto la
+      # recuperacion de contraseña por mail no puede salir.
+      # Ver infra-notes-vps-hostinger/vps/mail.md.
+      - mail_net
 
   client:
     build:
@@ -48,3 +53,7 @@ volumes:
 networks:
   vetadmin_net:
     driver: bridge
+  # Creada a mano una sola vez en el VPS: docker network create mail_net
+  # (external: no la administra este compose, la comparten las tres apps).
+  mail_net:
+    external: true
