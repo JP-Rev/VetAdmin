@@ -5,8 +5,11 @@ import { Button } from '../common/Button';
 import { FormField } from '../common/FormField';
 import { SpeciesIcon } from '../../lib/speciesIcon';
 import {
-  Plus, Trash2, FileText, Thermometer, Scissors, Syringe, Paperclip, Upload, X,
+  Plus, Trash2, FileText, Thermometer, Scissors, Syringe, Paperclip, X,
 } from 'lucide-react';
+import {
+  AttachmentPicker, FileThumb, MAX_ATTACHMENT_BYTES, fmtFileSize,
+} from '../common/AttachmentPicker';
 
 interface ConsultationFormComponentProps {
   appointment: Turno;
@@ -15,9 +18,6 @@ interface ConsultationFormComponentProps {
 }
 
 const generateLocalId = () => `temp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-
-const fmtSize = (bytes: number) =>
-  bytes < 1024 * 1024 ? `${(bytes / 1024).toFixed(0)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 
 type TabKey = 'consulta' | 'enfermedades' | 'cirugias' | 'vacunas' | 'archivos';
 
@@ -100,10 +100,8 @@ export const ConsultationFormComponent: React.FC<ConsultationFormComponentProps>
     setError(null);
   };
 
-  const handleFilesPicked = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files?.length) return;
-    setFormState(prev => ({ ...prev, attachments: [...prev.attachments, ...Array.from(e.target.files!)] }));
-    e.target.value = ''; // permite volver a elegir el mismo archivo
+  const handleFilesPicked = (files: File[]) => {
+    setFormState(prev => ({ ...prev, attachments: [...prev.attachments, ...files] }));
     setError(null);
   };
 
@@ -373,22 +371,20 @@ export const ConsultationFormComponent: React.FC<ConsultationFormComponentProps>
 
         {tab === 'archivos' && (
           <div className="flex flex-col gap-3">
-            <label className="flex flex-col items-center justify-center gap-2 py-8 px-4 rounded-xl border-2 border-dashed
-                              border-secondary-300 hover:border-primary-500 hover:bg-primary-50/40 cursor-pointer transition-colors">
-              <Upload size={22} className="text-secondary-500" />
-              <span className="text-[13px] font-semibold text-secondary-700">Elegí archivos para adjuntar</span>
-              <span className="text-[11.5px] text-secondary-500">Estudios, radiografías, fotos o PDFs</span>
-              <input type="file" multiple onChange={handleFilesPicked} className="hidden" />
-            </label>
+            <AttachmentPicker
+              id="consulta"
+              onFiles={handleFilesPicked}
+              onTooLarge={name => setError(`"${name}" supera el límite de ${MAX_ATTACHMENT_BYTES / (1024 * 1024)} MB y no se adjuntó.`)}
+            />
 
             {formState.attachments.length > 0 && (
               <ul className="flex flex-col gap-2 m-0 p-0 list-none">
                 {formState.attachments.map((file, i) => (
                   <li key={`${file.name}-${i}`} className="flex items-center gap-3 bg-surface border border-secondary-200 rounded-[10px] px-3 py-2.5">
-                    <Paperclip size={15} className="text-secondary-500 flex-shrink-0" />
+                    <FileThumb file={file} />
                     <span className="flex-1 min-w-0 flex flex-col">
                       <span className="text-[13px] font-medium text-secondary-900 truncate">{file.name}</span>
-                      <span className="text-[11.5px] text-secondary-500">{fmtSize(file.size)}</span>
+                      <span className="text-[11.5px] text-secondary-500">{fmtFileSize(file.size)}</span>
                     </span>
                     <button
                       type="button"

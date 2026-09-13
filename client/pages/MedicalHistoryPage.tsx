@@ -11,6 +11,9 @@ import { SpeciesIcon } from '../lib/speciesIcon';
 import { getPetAge } from '../lib/petAge';
 import { PasswordConfirmDialog } from '../components/common/PasswordConfirmDialog';
 import { PetFormComponent } from './ClientsPage';
+import {
+  AttachmentPicker, FileThumb, MAX_ATTACHMENT_BYTES, fmtFileSize,
+} from '../components/common/AttachmentPicker';
 
 /**
  * Boton de accion solo con icono: la etiqueta va en title/aria-label y aparece
@@ -64,28 +67,6 @@ const NewEventFormComponent: React.FC<NewEventFormProps> = ({ petId, onSave, onC
     const [surgeryNotes, setSurgeryNotes] = useState<string>('');
 
     const [attachments, setAttachments] = useState<File[]>([]);
-    const [fileInputKey, setFileInputKey] = useState(Date.now()); // To reset file input
-
-    // Debe coincidir con el límite configurado en el backend (multer, ver server/src/storage.js)
-    const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024;
-
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files) {
-            const files = Array.from(e.target.files);
-            const accepted: File[] = [];
-
-            for (const file of files) {
-                if (file.size > MAX_FILE_SIZE_BYTES) {
-                    alert(`El archivo "${file.name}" es demasiado grande (max ${MAX_FILE_SIZE_BYTES / (1024*1024)}MB). No se adjuntará.`);
-                    continue;
-                }
-                accepted.push(file);
-            }
-
-            setAttachments(prev => [...prev, ...accepted]);
-            setFileInputKey(Date.now()); // Reset file input to allow selecting the same file again if removed
-        }
-    };
 
     const handleRemoveAttachment = (index: number) => {
         setAttachments(prev => prev.filter((_, i) => i !== index));
@@ -184,32 +165,30 @@ const NewEventFormComponent: React.FC<NewEventFormProps> = ({ petId, onSave, onC
                  <FormField label="Descripción / Notas" name="descripcion" as="textarea" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} required={tipoEvento !== TipoEventoHistorial.VACUNACION && attachments.length === 0} rows={3} placeholder={tipoEvento === TipoEventoHistorial.VACUNACION ? "Nombre de la vacuna, lote, etc." : "Detalles del evento"}/>
             )}
 
-            {/* File Attachments */}
+            {/* Adjuntos: archivo del dispositivo o foto sacada en el momento */}
             <div className="space-y-2">
-                <label htmlFor="attachments" className="block text-sm font-medium text-secondary-700">Adjuntar Archivos (imágenes, PDFs, videos cortos)</label>
-                <p className="text-xs text-secondary-500">Límite de tamaño: {MAX_FILE_SIZE_BYTES / (1024*1024)}MB por archivo.</p>
-                <input
-                    key={fileInputKey} // Used to reset the input
-                    type="file"
-                    id="attachments"
-                    multiple
-                    onChange={handleFileChange}
-                    className="block w-full text-sm text-secondary-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+                <label className="block text-sm font-medium text-secondary-700">Adjuntar archivos</label>
+                <AttachmentPicker
+                    id="evento-nuevo"
+                    onFiles={files => setAttachments(prev => [...prev, ...files])}
+                    onTooLarge={name => alert(`"${name}" supera los ${MAX_ATTACHMENT_BYTES / (1024*1024)} MB y no se adjuntó.`)}
                 />
                 {attachments.length > 0 && (
-                    <div className="mt-2 space-y-1">
-                        <h4 className="text-xs font-medium text-secondary-600">Archivos seleccionados:</h4>
-                        <ul className="max-h-32 overflow-y-auto border border-secondary-200 rounded-md p-1 bg-secondary-50">
-                            {attachments.map((file, index) => (
-                                <li key={`${file.name}-${index}`} className="text-xs flex justify-between items-center p-1 hover:bg-secondary-100 rounded">
-                                    <span className="truncate" title={file.name}>{file.name} ({(file.size / 1024).toFixed(1)} KB)</span>
-                                    <Button type="button" variant="ghost" size="sm" onClick={() => handleRemoveAttachment(index)} className="p-0.5 text-error-500 hover:text-error-700">
-                                        <XCircle size={14} />
-                                    </Button>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
+                    <ul className="flex flex-col gap-2 m-0 p-0 list-none max-h-52 overflow-y-auto">
+                        {attachments.map((file, index) => (
+                            <li key={`${file.name}-${index}`}
+                                className="flex items-center gap-3 bg-surface border border-secondary-200 rounded-[10px] px-3 py-2">
+                                <FileThumb file={file} />
+                                <span className="flex-1 min-w-0 flex flex-col">
+                                    <span className="text-[13px] font-medium text-secondary-900 truncate" title={file.name}>{file.name}</span>
+                                    <span className="text-[11.5px] text-secondary-500">{fmtFileSize(file.size)}</span>
+                                </span>
+                                <IconBtn label={`Quitar ${file.name}`} size="sm" variant="danger" onClick={() => handleRemoveAttachment(index)}>
+                                    <XCircle size={14} />
+                                </IconBtn>
+                            </li>
+                        ))}
+                    </ul>
                 )}
             </div>
 
@@ -233,29 +212,7 @@ const EditEventFormComponent: React.FC<EditEventFormProps> = ({ initialEvent, on
     const [descripcion, setDescripcion] = useState(initialEvent.descripcion);
     const [existingAttachments, setExistingAttachments] = useState<AttachmentFile[]>(initialEvent.attachments || []);
     const [newFiles, setNewFiles] = useState<File[]>([]);
-    const [fileInputKey, setFileInputKey] = useState(Date.now());
     const [submitting, setSubmitting] = useState(false);
-
-    // Debe coincidir con el límite configurado en el backend (multer, ver server/src/storage.js)
-    const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024;
-
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files) {
-            const files = Array.from(e.target.files);
-            const accepted: File[] = [];
-
-            for (const file of files) {
-                if (file.size > MAX_FILE_SIZE_BYTES) {
-                    alert(`El archivo "${file.name}" es demasiado grande (max ${MAX_FILE_SIZE_BYTES / (1024*1024)}MB).`);
-                    continue;
-                }
-                accepted.push(file);
-            }
-
-            setNewFiles(prev => [...prev, ...accepted]);
-            setFileInputKey(Date.now());
-        }
-    };
 
     const handleRemoveNewFile = (index: number) => {
         setNewFiles(prev => prev.filter((_, i) => i !== index));
@@ -337,29 +294,28 @@ const EditEventFormComponent: React.FC<EditEventFormProps> = ({ initialEvent, on
                         </ul>
                     </div>
                 )}
-                <label htmlFor="edit_attachments" className="block text-sm font-medium text-secondary-700">Adjuntar Archivos Nuevos</label>
-                <input
-                    key={fileInputKey}
-                    type="file"
-                    id="edit_attachments"
-                    multiple
-                    onChange={handleFileChange}
-                    className="block w-full text-sm text-secondary-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+                <label className="block text-sm font-medium text-secondary-700">Adjuntar archivos nuevos</label>
+                <AttachmentPicker
+                    id="evento-editar"
+                    onFiles={files => setNewFiles(prev => [...prev, ...files])}
+                    onTooLarge={name => alert(`"${name}" supera los ${MAX_ATTACHMENT_BYTES / (1024*1024)} MB y no se adjuntó.`)}
                 />
                 {newFiles.length > 0 && (
-                    <div className="mt-2 space-y-1">
-                        <h4 className="text-xs font-medium text-secondary-600">Archivos nuevos por subir:</h4>
-                        <ul className="max-h-32 overflow-y-auto border border-secondary-200 rounded-md p-1 bg-secondary-50">
-                            {newFiles.map((file, index) => (
-                                <li key={`${file.name}-${index}`} className="text-xs flex justify-between items-center p-1 hover:bg-secondary-100 rounded">
-                                    <span className="truncate" title={file.name}>{file.name} ({(file.size / 1024).toFixed(1)} KB)</span>
-                                    <Button type="button" variant="ghost" size="sm" onClick={() => handleRemoveNewFile(index)} className="p-0.5 text-error-500 hover:text-error-700">
-                                        <XCircle size={14} />
-                                    </Button>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
+                    <ul className="flex flex-col gap-2 m-0 p-0 list-none max-h-52 overflow-y-auto">
+                        {newFiles.map((file, index) => (
+                            <li key={`${file.name}-${index}`}
+                                className="flex items-center gap-3 bg-surface border border-secondary-200 rounded-[10px] px-3 py-2">
+                                <FileThumb file={file} />
+                                <span className="flex-1 min-w-0 flex flex-col">
+                                    <span className="text-[13px] font-medium text-secondary-900 truncate" title={file.name}>{file.name}</span>
+                                    <span className="text-[11.5px] text-secondary-500">{fmtFileSize(file.size)}</span>
+                                </span>
+                                <IconBtn label={`Quitar ${file.name}`} size="sm" variant="danger" onClick={() => handleRemoveNewFile(index)}>
+                                    <XCircle size={14} />
+                                </IconBtn>
+                            </li>
+                        ))}
+                    </ul>
                 )}
             </div>
             <div className="flex justify-end space-x-3 pt-4">
