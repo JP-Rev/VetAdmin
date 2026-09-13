@@ -45,16 +45,7 @@ node scripts/migrarPesoAPesajes.js importar   # DESPUES de db push
 
 Ambos pasos son idempotentes.
 
-## recuperarPesosDesdeBackup.js
-
-Plan B del anterior: si el `db push` ya borro la columna, lee los pesos de una
-copia vieja de la base y los inserta como `Pesaje` en la base viva.
-
-```bash
-node scripts/recuperarPesosDesdeBackup.js /ruta/copia.db --dry-run
-node scripts/recuperarPesosDesdeBackup.js /ruta/copia.db
-```
-
-Pasale una **copia** del backup, no el backup original: SQLite abre journal
-aunque solo leas. Saltea las mascotas que ya tengan algun pesaje cargado, asi
-que se puede correr de nuevo sin duplicar.
+> Hubo además un `recuperarPesosDesdeBackup.js` para rescatar desde un backup
+> los pesos que ese `db push` se llevó puestos. Se borró: los 3 valores
+> perdidos eran de prueba, y el script leía `Mascota.peso`, una columna que ya
+> no existe. Lo que sigue valiendo es la regla de arriba.

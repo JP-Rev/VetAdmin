@@ -7,7 +7,6 @@ Contexto para retomar este proyecto en sesiones futuras. Para arquitectura/stack
 Este repo corre en el mismo VPS que Facturacion-Web y Kinetic (`vetadmin.frodosoft.com.ar`, instancia única por ahora, ver `docker-compose.yml` en la raíz). La documentación operativa del servidor (Nginx, Cloudflare, backups, incidentes) vive en el repo `infra-notes-vps-hostinger`, no acá — es la fuente de verdad si necesitás saber algo del estado real del servidor:
 
 - `proyectos/vet-admin.md` — estado de este proyecto en el VPS.
-- `proyectos/vet-admin.md` — estado de este proyecto en el VPS.
 - `vps/mail.md` — relay SMTP compartido (Mailgun) para mandar mail sin guardar credenciales propias. **Aplica directamente acá**: Vet-Admin ya tiene auth real (`server/src/auth.js`, JWT en cookie httpOnly + `User.passwordHash`), le faltan los endpoints de recuperación de contraseña + el mailer. **Leer ese documento antes de tocar nada de mailer**: el mecanismo es una red Docker compartida (`mail_net`, host SMTP `mail`, puerto `25`), y hay dos detalles que ya costaron horas de debug en otra app — `tls: { rejectUnauthorized: false }` es obligatorio (el relay usa certificado autofirmado), y el remitente tiene que ser `@mail.frodosoft.com.ar`. Kinetic ya implementó todo esto el 23/08, sirve de referencia.
 - `vps/backups.md` — esquema de backups del VPS. Ver la convención de storage abajo.
 
@@ -20,3 +19,37 @@ Esto motivó un cambio (28/08): `STORAGE_ROOT_HOST` tenía como default `../stor
 ⚠️ **La base todavía es la excepción**: vive en un volumen Docker nombrado (`sqlite_data`), no bajo `/srv/storage/`. Está respaldada igual, pero el script de backup tiene que listarla a mano en vez de descubrirla sola como las de Kinetic y Facturacion-Web. Migrarla a `/srv/storage/vetadmin/database/vetadmin.db` la alinearía con las otras dos — requiere parar el stack y copiar el archivo, ver `vps/backups.md` sección 12.
 
 ⚠️ **Convención del VPS**: si este proyecto migra a multiempresa (un stack Docker por cliente, como ya hace Kinetic), cualquier `docker-compose.yml` por cliente nuevo necesita un `name:` explícito (`vetadmin-<slug>`) para evitar colisión de nombre de proyecto con otra app del mismo VPS — ver incidente real en `infra-notes-vps-hostinger/plan-multiempresa-y-backups.md` sección 0b.
+
+## Pendientes
+
+### Recuperación de contraseña por mail (no implementado)
+
+Hoy la única forma de que alguien vuelva a entrar si se olvidó la clave es
+cambiarle el `passwordHash` a mano en la base. Falta:
+
+- `POST /api/auth/forgot-password` — genera un token de un solo uso con
+  vencimiento y manda el mail. Responder siempre 200, exista o no el usuario,
+  para no filtrar qué direcciones están registradas.
+- `POST /api/auth/reset-password` — valida el token, reemplaza el hash
+  (`bcryptjs`, como el resto de `server/src/auth.js`) y lo invalida.
+- Tabla para los tokens (o columnas en `User`), y la pantalla en el front.
+
+🔴 **Antes de escribir una línea del mailer, leer `vps/mail.md` en
+`infra-notes-vps-hostinger`.** Se manda por el relay SMTP compartido del VPS,
+no por credenciales propias: red Docker `mail_net`, host `mail`, puerto `25`.
+Dos detalles que ya costaron horas de debug en otra app —
+`tls: { rejectUnauthorized: false }` es obligatorio porque el relay usa
+certificado autofirmado, y el remitente tiene que ser `@mail.frodosoft.com.ar`.
+Kinetic lo implementó entero el 23/08: sirve de referencia directa.
+
+## Incidentes
+
+**04/09 — se perdieron datos en un `db push`.** El deploy de la tabla `Pesaje`
+corría un script de migración con `docker compose run`, pero `server/Dockerfile`
+no copiaba `scripts/` a la imagen: los pasos de exportar/importar fallaron con
+`Cannot find module`, el `prisma db push --accept-data-loss` que iba en el medio
+corrió igual y se llevó `Mascota.peso` (3 valores, de prueba) y
+`Cliente.domicilio` (1, ficticio). Ya está arreglado (`COPY scripts ./scripts`).
+La regla quedó anotada en `server/scripts/README.md`: **si un paso del deploy
+corre un script, verificar primero que el script exista en la imagen y no seguir
+si el paso anterior falló.**
