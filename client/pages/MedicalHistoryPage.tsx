@@ -698,29 +698,43 @@ export const MedicalHistoryPage: React.FC = () => {
               const ref = getReferenceDetails(event);
               const abierto = expandidos.has(event.id_evento);
               const nAdjuntos = event.attachments?.length ?? 0;
-              const resumen = event.descripcion.length > 70
-                ? `${event.descripcion.slice(0, 70)}\u2026`
+              // El corte fino lo hace el CSS (dos lineas en celular, una en
+              // escritorio); esto es solo para no volcar un texto larguisimo
+              // al DOM.
+              const resumen = event.descripcion.length > 160
+                ? `${event.descripcion.slice(0, 160)}\u2026`
                 : event.descripcion;
               return (
                 <li key={event.id_evento} className="relative pl-6 pb-7 last:pb-0">
                   <span className={`absolute -left-[5px] top-1.5 w-2.5 h-2.5 rounded-full ring-4 ring-surface ${tone.dot}`} />
 
-                  <div className="flex flex-wrap items-start justify-between gap-2">
+                  {/* En escritorio la fila no envuelve: el boton se achica y el
+                      resumen se corta con truncate, en vez de empujar la fecha y
+                      las acciones a un segundo renglon. */}
+                  <div className="flex flex-wrap sm:flex-nowrap items-start sm:items-center justify-between gap-2">
                     <button
                       type="button"
                       onClick={() => toggleEvento(event.id_evento)}
                       aria-expanded={abierto}
-                      className="flex items-center gap-2 min-w-0 text-left"
+                      // En el celular ocupa el renglon entero: el resumen necesita ese
+                      // ancho, y las acciones bajan solas a la fila de abajo.
+                      className="w-full sm:w-auto flex flex-wrap sm:flex-nowrap items-center gap-x-2 gap-y-1 min-w-0 text-left"
                     >
-                      <ChevronRight
-                        size={14}
-                        className={`text-secondary-400 transition-transform flex-shrink-0 ${abierto ? 'rotate-90' : ''}`}
-                      />
-                      <span className={tone.text}>{getEventIcon(event.tipo_evento)}</span>
-                      <strong className={`text-[14.5px] font-bold ${tone.text} flex-shrink-0`}>{event.tipo_evento}</strong>
-                      {!abierto && (
-                        <span className="text-[12.5px] text-secondary-500 truncate hidden sm:inline">
-                          &mdash; {resumen}
+                      <span className="flex items-center gap-2 min-w-0 sm:flex-shrink-0">
+                        <ChevronRight
+                          size={14}
+                          className={`text-secondary-400 transition-transform flex-shrink-0 ${abierto ? 'rotate-90' : ''}`}
+                        />
+                        <span className={tone.text}>{getEventIcon(event.tipo_evento)}</span>
+                        <strong className={`text-[14.5px] font-bold ${tone.text}`}>{event.tipo_evento}</strong>
+                      </span>
+                      {/* El resumen es lo que hace legible la historia de un vistazo.
+                          En el celular no entra al lado del titulo, asi que baja a su
+                          propio renglon (hasta dos lineas) en vez de desaparecer. */}
+                      {!abierto && event.descripcion.trim() && (
+                        <span className="w-full sm:w-auto min-w-0 text-[12.5px] text-secondary-500
+                                         line-clamp-2 sm:line-clamp-none sm:truncate">
+                          <span className="hidden sm:inline">&mdash; </span>{resumen}
                         </span>
                       )}
                     </button>
