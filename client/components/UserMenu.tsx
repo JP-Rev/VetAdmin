@@ -19,6 +19,13 @@ export const UserMenu: React.FC = () => {
     setIsOpen(false);
   };
 
+  // El tema se aplica a toda la pantalla, asi que dejar el menu abierto tapando
+  // el resultado no tiene sentido: se elige y se cierra.
+  const elegirTema = (valor: Theme) => {
+    setTheme(valor);
+    setIsOpen(false);
+  };
+
   if (!user) return null;
 
   const localPart = user.email.split('@')[0];
@@ -62,7 +69,7 @@ export const UserMenu: React.FC = () => {
                   <button
                     key={option.value}
                     type="button"
-                    onClick={() => setTheme(option.value)}
+                    onClick={() => elegirTema(option.value)}
                     className={`flex-1 flex flex-col items-center gap-0.5 py-1.5 rounded text-xs transition-colors ${
                       theme === option.value
                         ? 'bg-primary-600 text-white'
