@@ -1,10 +1,12 @@
 import React, { useState, useMemo } from 'react';
+import { useParams, Navigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { useSupabaseData } from '../contexts/SupabaseDataContext';
 import { Raza, RazaForm, Enfermedad, EnfermedadForm, Cirugia, CirugiaForm, Especie, CategoriaProducto, CategoriaProductoForm } from '../types';
 import { Modal } from '../components/Modal';
 import { Button } from '../components/common/Button';
 import { FormField } from '../components/common/FormField';
-import { Plus, Edit3, Trash2, Settings as IconSettings, PawPrint, Thermometer, Scissors, Tags, Building2, Check, Search, X, Users } from 'lucide-react';
+import { Plus, Edit3, Trash2, PawPrint, Thermometer, Scissors, Tags, Building2, Check, Search, X, Users } from 'lucide-react';
 import { ESPECIES } from '../constants';
 import { UsuariosSettings } from '../components/settings/UsuariosSettings';
 
@@ -56,6 +58,27 @@ const TabHeader: React.FC<{
 );
 
 type TabKey = 'clinic' | 'users' | 'breeds' | 'diseases' | 'surgeries' | 'productCategories';
+
+/**
+ * Cada sección de Configuración es una ruta propia (/settings/<slug>) y entra
+ * al sidebar como submenú. Antes eran pestañas: en el celular la barra se
+ * arrastraba para el costado y escondía la mitad de las secciones.
+ *
+ * `permiso` marca las dos únicas que se pueden revocar. Los catálogos no: sin
+ * razas no se puede dar de alta una mascota, y sin enfermedades ni cirugías no
+ * se puede cargar una consulta.
+ */
+export const SECCIONES_CONFIG: {
+  slug: string; tab: TabKey; label: string; corto: string;
+  icon: React.ReactNode; permiso?: 'usuarios' | 'clinica';
+}[] = [
+  { slug: 'clinica', tab: 'clinic', label: 'Datos de la veterinaria', corto: 'Veterinaria', icon: <Building2 size={17} />, permiso: 'clinica' },
+  { slug: 'usuarios', tab: 'users', label: 'Usuarios', corto: 'Usuarios', icon: <Users size={17} />, permiso: 'usuarios' },
+  { slug: 'razas', tab: 'breeds', label: 'Razas', corto: 'Razas', icon: <PawPrint size={17} /> },
+  { slug: 'enfermedades', tab: 'diseases', label: 'Enfermedades', corto: 'Enfermedades', icon: <Thermometer size={17} /> },
+  { slug: 'cirugias', tab: 'surgeries', label: 'Tipos de Cirugía', corto: 'Cirugías', icon: <Scissors size={17} /> },
+  { slug: 'categorias', tab: 'productCategories', label: 'Categorías de Productos', corto: 'Categorías', icon: <Tags size={17} /> },
+];
 
 // Datos de la veterinaria: fila singleton, se edita en vez de crearse/borrarse.
 const ClinicSettingsForm: React.FC = () => {
@@ -383,7 +406,11 @@ const ProductCategoryFormComponent: React.FC<ProductCategoryFormProps> = ({ init
 
 export const SettingsPage: React.FC = () => {
   const { breeds, deleteBreed, diseases, deleteDisease, surgeries, deleteSurgery, productCategories, deleteProductCategory } = useSupabaseData();
-  const [activeTab, setActiveTab] = useState<TabKey>('clinic');
+  const { seccion } = useParams<{ seccion?: string }>();
+  const { puede } = useAuth();
+  const visibles = SECCIONES_CONFIG.filter(x => !x.permiso || puede(x.permiso));
+  const actual = visibles.find(x => x.slug === seccion);
+  const activeTab: TabKey = actual?.tab ?? visibles[0]?.tab ?? 'breeds';
   
   const [isBreedModalOpen, setIsBreedModalOpen] = useState(false);
   const [editingBreed, setEditingBreed] = useState<Raza | undefined>(undefined);
@@ -634,40 +661,17 @@ export const SettingsPage: React.FC = () => {
     }
   };
 
-  const tabs = [
-    { key: 'clinic', label: 'Clínica', icon: <Building2 size={18} /> },
-    { key: 'users', label: 'Usuarios', icon: <Users size={18} /> },
-    { key: 'breeds', label: 'Razas', icon: <PawPrint size={18} /> },
-    { key: 'diseases', label: 'Enfermedades', icon: <Thermometer size={18} /> },
-    { key: 'surgeries', label: 'Tipos de Cirugía', icon: <Scissors size={18} /> },
-    { key: 'productCategories', label: 'Categorías de Productos', icon: <Tags size={18} /> },
-  ];
+  // Una sección que no existe, o para la que no hay permiso, manda a la primera
+  // disponible: sin esto un link viejo o un permiso recién quitado dejan la
+  // pantalla en blanco.
+  if (seccion && !actual) {
+    return <Navigate to={`/settings/${visibles[0]?.slug ?? 'razas'}`} replace />;
+  }
 
+  // Sin titulo propio: cada seccion ya se encabeza sola, y el sidebar marca en
+  // cual estas parado. Repetirlo arriba mostraba "Usuarios" dos veces.
   return (
     <div className="space-y-6">
-      <div className="flex items-center space-x-3">
-        <IconSettings className="h-8 w-8 text-primary-600" />
-        <h1 className="text-3xl font-bold text-secondary-800">Configuración del Sistema</h1>
-      </div>
-
-      {/* Las solapas se acomodan en varios renglones: en el celular arrastrar la
-          barra para el costado escondía la mitad de las secciones. */}
-      <div className="flex flex-wrap border-b border-secondary-300 mb-6">
-        {tabs.map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key as TabKey)}
-            className={`flex items-center space-x-2 px-3 sm:px-4 py-3 -mb-px text-sm font-medium focus:outline-none transition-colors duration-150 whitespace-nowrap
-              ${activeTab === tab.key 
-                ? 'border-b-2 border-primary-600 text-primary-600' 
-                : 'border-b-2 border-transparent text-secondary-500 hover:text-primary-500 hover:border-primary-300'}`}
-          >
-            {tab.icon}
-            <span>{tab.label}</span>
-          </button>
-        ))}
-      </div>
-      
       {renderTabContent()}
 
       {isBreedModalOpen && <Modal isOpen={isBreedModalOpen} onClose={handleCloseBreedModal} title={editingBreed ? 'Editar Raza' : 'Nueva Raza'}><BreedFormComponent initialData={editingBreed} onSave={handleBreedSaved} onClose={handleCloseBreedModal} /></Modal>}

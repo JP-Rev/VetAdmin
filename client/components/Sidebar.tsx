@@ -7,6 +7,9 @@ import {
   PawPrint, Settings as IconSettings, CreditCard,
 } from 'lucide-react';
 import { FrodosoftLogo, FrodosoftWordmark } from './FrodosoftLogo';
+import { useAuth } from '../contexts/AuthContext';
+import { SECCIONES_CONFIG } from '../pages/SettingsPage';
+import { ChevronDown } from 'lucide-react';
 
 interface NavItemProps {
   to: string;
@@ -60,6 +63,15 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
   const { clinica, appointments } = useSupabaseData();
+  const { puede } = useAuth();
+  const location = useLocation();
+
+  // Configuración deja de ser una pantalla con pestañas: sus secciones son
+  // submenú acá. Arranca desplegado si ya estás parado en alguna.
+  const seccionesConfig = SECCIONES_CONFIG.filter(x => !x.permiso || puede(x.permiso));
+  const enConfig = location.pathname.startsWith('/settings');
+  const [configAbierto, setConfigAbierto] = React.useState(enConfig);
+  React.useEffect(() => { if (enConfig) setConfigAbierto(true); }, [enConfig]);
   // El badge cuenta los turnos pendientes de HOY (accionable), no todos los
   // futuros: ese número crece sin techo y deja de significar algo.
   const hoy = new Date().toISOString().split('T')[0];
@@ -102,21 +114,51 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
       </div>
 
       <nav className="flex flex-col gap-[22px] flex-1 overflow-y-auto">
-        <NavSection label="General">
-          <NavItem to="/" icon={<LayoutDashboard size={17} />} onClick={handleMobileLinkClick}>Dashboard</NavItem>
-          <NavItem to="/clients" icon={<Users size={17} />} onClick={handleMobileLinkClick}>Clientes</NavItem>
-          <NavItem to="/pets" icon={<PawPrint size={17} />} onClick={handleMobileLinkClick}>Mascotas</NavItem>
-          <NavItem to="/appointments" icon={<CalendarDays size={17} />} badge={turnosCount} onClick={handleMobileLinkClick}>Turnos</NavItem>
-        </NavSection>
+        {puede('general') && (
+          <NavSection label="General">
+            <NavItem to="/" icon={<LayoutDashboard size={17} />} onClick={handleMobileLinkClick}>Dashboard</NavItem>
+            <NavItem to="/clients" icon={<Users size={17} />} onClick={handleMobileLinkClick}>Clientes</NavItem>
+            <NavItem to="/pets" icon={<PawPrint size={17} />} onClick={handleMobileLinkClick}>Mascotas</NavItem>
+            <NavItem to="/appointments" icon={<CalendarDays size={17} />} badge={turnosCount} onClick={handleMobileLinkClick}>Turnos</NavItem>
+          </NavSection>
+        )}
 
-        <NavSection label="Comercial">
-          <NavItem to="/ventas" icon={<ShoppingCart size={17} />} onClick={handleMobileLinkClick}>Ventas</NavItem>
-          <NavItem to="/products" icon={<Package size={17} />} onClick={handleMobileLinkClick}>Productos</NavItem>
-          <NavItem to="/expenses" icon={<CreditCard size={17} />} onClick={handleMobileLinkClick}>Gastos</NavItem>
-        </NavSection>
+        {puede('comercial') && (
+          <NavSection label="Comercial">
+            <NavItem to="/ventas" icon={<ShoppingCart size={17} />} onClick={handleMobileLinkClick}>Ventas</NavItem>
+            <NavItem to="/products" icon={<Package size={17} />} onClick={handleMobileLinkClick}>Productos</NavItem>
+            <NavItem to="/expenses" icon={<CreditCard size={17} />} onClick={handleMobileLinkClick}>Gastos</NavItem>
+          </NavSection>
+        )}
 
         <NavSection label="Sistema">
-          <NavItem to="/settings" icon={<IconSettings size={17} />} onClick={handleMobileLinkClick}>Configuración</NavItem>
+          <button
+            type="button"
+            onClick={() => setConfigAbierto(v => !v)}
+            aria-expanded={configAbierto}
+            className={`flex items-center justify-between gap-3 px-3 py-2.5 rounded-[10px] text-[13.5px] transition-colors duration-150 ${
+              enConfig ? 'text-white font-bold' : 'text-[#a8c6c2] font-medium hover:bg-white/[0.06] hover:text-white'
+            }`}
+          >
+            <span className="flex items-center gap-[11px] min-w-0">
+              <span className="h-[17px] w-[17px] flex-shrink-0"><IconSettings size={17} /></span>
+              <span className="truncate">Configuración</span>
+            </span>
+            <ChevronDown
+              size={14}
+              className={`flex-shrink-0 transition-transform ${configAbierto ? 'rotate-180' : ''}`}
+            />
+          </button>
+
+          {configAbierto && (
+            <div className="flex flex-col gap-[3px] pl-3 ml-[9px] border-l border-white/10">
+              {seccionesConfig.map(s => (
+                <NavItem key={s.slug} to={`/settings/${s.slug}`} icon={s.icon} onClick={handleMobileLinkClick}>
+                  {s.corto}
+                </NavItem>
+              ))}
+            </div>
+          )}
         </NavSection>
       </nav>
 

@@ -5,6 +5,7 @@ import {
   login, logout, me, requireAuth, attachUserIfPresent, forgotPassword, resetPassword,
 } from './auth.js'
 import { errorHandler } from './http.js'
+import { PERMISOS, requirePermiso } from './permisos.js'
 
 import bootstrapRouter from './routes/bootstrap.js'
 import clientesRouter from './routes/clientes.js'
@@ -40,21 +41,41 @@ export function createApp() {
   app.post('/api/auth/forgot-password', forgotPassword)
   app.post('/api/auth/reset-password', resetPassword)
 
-  app.use('/api/usuarios', requireAuth, usuariosRouter)
+  // Modulos con permiso propio. El chequeo va acá y no solo en el front:
+  // esconder una opcion del menu no impide llamar al endpoint a mano.
+  const general = requirePermiso(PERMISOS.GENERAL)
+  const comercial = requirePermiso(PERMISOS.COMERCIAL)
+
+  app.use('/api/usuarios', requireAuth, requirePermiso(PERMISOS.USUARIOS), usuariosRouter)
+
+  // bootstrap es la carga inicial de toda la app: pide sesion pero no modulo.
+  // Lo que devuelve de mas, el front no lo muestra.
   app.use('/api/bootstrap', requireAuth, bootstrapRouter)
-  app.use('/api/clientes', requireAuth, clientesRouter)
-  app.use('/api/mascotas', requireAuth, mascotasRouter)
-  app.use('/api/turnos', requireAuth, turnosRouter)
-  app.use('/api/productos', requireAuth, productosRouter)
+
+  app.use('/api/clientes', requireAuth, general, clientesRouter)
+  app.use('/api/mascotas', requireAuth, general, mascotasRouter)
+  app.use('/api/turnos', requireAuth, general, turnosRouter)
+
+  app.use('/api/productos', requireAuth, comercial, productosRouter)
+  app.use('/api/gastos', requireAuth, comercial, gastosRouter)
+
+  // Catalogos: sin permiso propio a proposito. Sin razas no se puede dar de
+  // alta una mascota, sin enfermedades ni cirugias no se puede cargar una
+  // consulta, y las categorias las usa el alta de productos.
   app.use('/api/categorias-productos', requireAuth, categoriasProductosRouter)
   app.use('/api/razas', requireAuth, razasRouter)
   app.use('/api/enfermedades', requireAuth, enfermedadesRouter)
   app.use('/api/cirugias', requireAuth, cirugiasRouter)
-  app.use('/api/gastos', requireAuth, gastosRouter)
-  app.use('/api/ventas', requireAuth, ventasRouter)
-  app.use('/api/historial-medico', requireAuth, historialMedicoRouter)
-  app.use('/api/attachments', requireAuth, attachmentsRouter)
-  app.use('/api/pesajes', requireAuth, pesajesRouter)
+  app.use('/api/ventas', requireAuth, comercial, ventasRouter)
+
+  // La historia clinica, los adjuntos y los pesajes son la ficha de la
+  // mascota: van con General, igual que Mascotas.
+  app.use('/api/historial-medico', requireAuth, general, historialMedicoRouter)
+  app.use('/api/attachments', requireAuth, general, attachmentsRouter)
+  app.use('/api/pesajes', requireAuth, general, pesajesRouter)
+
+  // El GET de clinica queda abierto: el nombre de la veterinaria se muestra en
+  // el sidebar y en el dashboard de cualquiera. El permiso protege la edicion.
   app.use('/api/clinica', requireAuth, clinicaRouter)
 
   app.use(errorHandler)

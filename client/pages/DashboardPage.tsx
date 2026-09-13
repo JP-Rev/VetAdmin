@@ -7,6 +7,7 @@ import {
   CalendarCheck, ChevronRight, TrendingUp, TrendingDown, Calendar, BarChart3,
 } from 'lucide-react';
 import { SpeciesIcon } from '../lib/speciesIcon';
+import { useAuth } from '../contexts/AuthContext';
 
 const todayISO = () => new Date().toISOString().split('T')[0];
 
@@ -193,6 +194,7 @@ export const DashboardPage: React.FC = () => {
     clients, pets, appointments, ventas, products, clinica, expenses,
     petSurgeries, surgeries, getDailyCashFlowReport,
   } = useSupabaseData();
+  const { puede } = useAuth();
   const navigate = useNavigate();
 
   const today = todayISO();
@@ -315,15 +317,17 @@ export const DashboardPage: React.FC = () => {
           delta={confirmedToday > 0 ? `${confirmedToday} atendidos` : undefined}
           spark={turnoSpark} linkTo="/appointments"
         />
-        <KpiCard
-          icon={<ShoppingCart size={15} />} label="Ventas pendientes" value={pendingVentas.length} unit="por cobrar"
-          delta={pendingTotal > 0 ? fmtMoney(pendingTotal) : undefined}
-          spark={ventaSpark} linkTo="/ventas"
-        />
+        {puede('comercial') && (
+          <KpiCard
+            icon={<ShoppingCart size={15} />} label="Ventas pendientes" value={pendingVentas.length} unit="por cobrar"
+            delta={pendingTotal > 0 ? fmtMoney(pendingTotal) : undefined}
+            spark={ventaSpark} linkTo="/ventas"
+          />
+        )}
       </div>
 
-      {/* Agenda + Flujo de caja */}
-      <div className="grid gap-[18px] grid-cols-1 lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,1fr)]">
+      {/* Agenda + Flujo de caja. Sin Comercial la agenda toma todo el ancho. */}
+      <div className={`grid gap-[18px] grid-cols-1 ${puede('comercial') ? 'lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,1fr)]' : ''}`}>
         <section className="bg-surface border border-secondary-200 rounded-[18px] shadow-[0_1px_2px_rgba(15,31,29,0.04)] flex flex-col overflow-hidden">
           <div className="flex items-center justify-between gap-4 px-5 pt-[18px] pb-3.5 border-b border-secondary-100">
             <div>
@@ -366,6 +370,7 @@ export const DashboardPage: React.FC = () => {
           )}
         </section>
 
+        {puede('comercial') && (
         <section className="rounded-[18px] p-5 flex flex-col gap-[18px] text-[#dcece9] bg-gradient-to-b from-[#0a2a27] to-[#0d3b36]">
           <div className="flex items-center justify-between gap-2">
             <h2 className="m-0 text-[16.5px] font-bold text-white tracking-[-0.3px]">Flujo de caja</h2>
@@ -427,9 +432,11 @@ export const DashboardPage: React.FC = () => {
             <BarChart3 size={15} />Ver detalle del día
           </Link>
         </section>
+        )}
       </div>
 
-      {/* Ventas de la semana + Stock bajo */}
+      {/* Ventas de la semana + Stock bajo: todo comercial. */}
+      {puede('comercial') && (
       <div className="grid gap-[18px] grid-cols-1 lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,1fr)]">
         <section className="bg-surface border border-secondary-200 rounded-[18px] px-5 pt-[18px] pb-5 shadow-[0_1px_2px_rgba(15,31,29,0.04)]">
           <div className="flex items-center justify-between gap-4 mb-[18px]">
@@ -492,8 +499,11 @@ export const DashboardPage: React.FC = () => {
         </section>
       </div>
 
+      )}
+
       {/* Acumulados historicos (antes vivian en la pagina Estadisticas) */}
-      <div className="grid gap-[18px] grid-cols-1 lg:grid-cols-3">
+      <div className={`grid gap-[18px] grid-cols-1 ${puede('comercial') ? 'lg:grid-cols-3' : ''}`}>
+        {puede('comercial') && (
         <RankCard
           title="Productos más vendidos"
           subtitle="Por ingresos acumulados"
@@ -505,6 +515,7 @@ export const DashboardPage: React.FC = () => {
           }))}
           emptyText="Todavía no hay ventas registradas."
         />
+        )}
         <RankCard
           title="Cirugías más frecuentes"
           subtitle="Total histórico"
@@ -515,6 +526,7 @@ export const DashboardPage: React.FC = () => {
           }))}
           emptyText="Todavía no hay cirugías registradas."
         />
+        {puede('comercial') && (
         <RankCard
           title="Gastos por categoría"
           subtitle="Total acumulado"
@@ -526,6 +538,7 @@ export const DashboardPage: React.FC = () => {
           }))}
           emptyText="Todavía no hay gastos registrados."
         />
+        )}
       </div>
     </div>
   );

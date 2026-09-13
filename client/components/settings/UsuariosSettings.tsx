@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { apiGet, apiPost, apiPatch, apiDelete, ApiError } from '../../lib/api';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth, PERMISOS, Permiso } from '../../contexts/AuthContext';
 import { Modal } from '../Modal';
 import { Button } from '../common/Button';
 import { FormField } from '../common/FormField';
@@ -10,10 +10,14 @@ import { Plus, Edit3, Trash2, Search, X, UserRound, ShieldAlert } from 'lucide-r
 interface Usuario {
   id_usuario: string;
   email: string;
+  permisos: Permiso[];
   createdAt: string;
 }
 
 const MIN_PASSWORD = 8;
+
+const mismosPermisos = (a: Permiso[], b: Permiso[]) =>
+  a.length === b.length && a.every(p => b.includes(p));
 
 /**
  * Alta y baja de quienes pueden entrar al sistema. No hay roles: todos ven
@@ -33,6 +37,7 @@ export const UsuariosSettings: React.FC = () => {
   const [editando, setEditando] = useState<Usuario | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [permisos, setPermisos] = useState<Permiso[]>(['general']);
   const [errorForm, setErrorForm] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
 
@@ -60,6 +65,7 @@ export const UsuariosSettings: React.FC = () => {
     setEditando(usuario ?? null);
     setEmail(usuario?.email ?? '');
     setPassword('');
+    setPermisos(usuario?.permisos ?? ['general']);
     setErrorForm(null);
     setModalAbierto(true);
   };
@@ -78,16 +84,17 @@ export const UsuariosSettings: React.FC = () => {
     setGuardando(true);
     try {
       if (editando) {
-        const cambios: Record<string, string> = {};
+        const cambios: Record<string, unknown> = {};
         if (email.trim().toLowerCase() !== editando.email) cambios.email = email;
         if (password) cambios.nuevaPassword = password;
+        if (!mismosPermisos(permisos, editando.permisos)) cambios.permisos = permisos;
         if (Object.keys(cambios).length === 0) {
           setModalAbierto(false);
           return;
         }
         await apiPatch(`/usuarios/${editando.id_usuario}`, cambios);
       } else {
-        await apiPost('/usuarios', { email, password });
+        await apiPost('/usuarios', { email, password, permisos });
       }
       await recargar();
       setModalAbierto(false);
@@ -99,6 +106,10 @@ export const UsuariosSettings: React.FC = () => {
   };
 
   const soyYo = (u: Usuario) => u.email === user?.email;
+  const editandoMiCuenta = editando !== null && soyYo(editando);
+
+  const alternarPermiso = (id: Permiso) =>
+    setPermisos(prev => (prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]));
 
   return (
     <section>
@@ -139,9 +150,9 @@ export const UsuariosSettings: React.FC = () => {
       <div className="flex items-start gap-2.5 bg-warning-50 border border-warning-200 rounded-xl px-4 py-3 mb-4">
         <ShieldAlert size={17} className="text-warning-700 flex-shrink-0 mt-0.5" />
         <p className="m-0 text-[12.5px] text-warning-800">
-          No hay permisos por usuario: cualquiera que entre ve y edita todo el sistema.
-          Conviene que al menos uno tenga un email real, porque es a donde llega el link
-          para recuperar la contraseña.
+          Los permisos son de acceso a módulos, no de confidencialidad: quien tiene un
+          módulo lo tiene entero. Conviene además que al menos una cuenta tenga un email
+          real, porque es a donde llega el link para recuperar la contraseña.
         </p>
       </div>
 
@@ -156,7 +167,8 @@ export const UsuariosSettings: React.FC = () => {
           <thead className="bg-secondary-50">
             <tr>
               <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase">Email</th>
-              <th className="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase">Alta</th>
+              <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase">Módulos</th>
+              <th className="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase">Alta</th>
               <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase">Acciones</th>
             </tr>
           </thead>
@@ -171,10 +183,30 @@ export const UsuariosSettings: React.FC = () => {
                       {soyYo(u) && (
                         <span className="text-[11px] font-semibold text-primary-700">tu cuenta</span>
                       )}
+                      {/* En el celular no hay columna de módulos: van acá abajo. */}
+                      <span className="md:hidden block text-[11px] text-secondary-500">
+                        {u.permisos.length
+                          ? PERMISOS.filter(p => u.permisos.includes(p.id)).map(p => p.label).join(' · ')
+                          : 'Sin módulos'}
+                      </span>
                     </span>
                   </span>
                 </td>
-                <td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-secondary-600">
+                <td className="hidden md:table-cell px-6 py-4 text-sm">
+                  <span className="flex flex-wrap gap-1">
+                    {u.permisos.length ? (
+                      PERMISOS.filter(p => u.permisos.includes(p.id)).map(p => (
+                        <span key={p.id}
+                              className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-primary-50 text-primary-700 whitespace-nowrap">
+                          {p.label}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-[12px] text-secondary-400">Sin módulos</span>
+                    )}
+                  </span>
+                </td>
+                <td className="hidden lg:table-cell px-6 py-4 whitespace-nowrap text-sm text-secondary-600">
                   {new Date(u.createdAt).toLocaleDateString('es-AR')}
                 </td>
                 <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm space-x-1">
@@ -222,6 +254,34 @@ export const UsuariosSettings: React.FC = () => {
               required={!editando}
               placeholder={editando ? 'Dejala vacía para no cambiarla' : `Al menos ${MIN_PASSWORD} caracteres`}
             />
+
+            <fieldset className="border border-secondary-200 rounded-xl px-4 pt-3 pb-4">
+              <legend className="px-1.5 text-[12.5px] font-semibold text-secondary-600">Módulos</legend>
+              <div className="flex flex-col gap-2.5">
+                {PERMISOS.map(p => {
+                  // Nadie puede dejarse a sí mismo sin acceso a Usuarios: sería
+                  // la última puerta para volver a administrar permisos.
+                  const bloqueado = editandoMiCuenta && p.id === 'usuarios';
+                  return (
+                    <label key={p.id} className={`flex items-start gap-2.5 ${bloqueado ? 'opacity-60' : 'cursor-pointer'}`}>
+                      <input
+                        type="checkbox"
+                        checked={permisos.includes(p.id)}
+                        disabled={bloqueado}
+                        onChange={() => alternarPermiso(p.id)}
+                        className="mt-0.5 rounded border-secondary-300 flex-shrink-0"
+                      />
+                      <span className="min-w-0">
+                        <span className="block text-[13.5px] font-medium text-secondary-900">{p.label}</span>
+                        <span className="block text-[11.5px] text-secondary-500">
+                          {bloqueado ? 'No podés quitarte este acceso a vos mismo.' : p.detalle}
+                        </span>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
 
             {errorForm && (
               <p className="m-0 text-[13px] text-error-700 bg-error-50 border border-error-200 rounded-lg px-3 py-2">

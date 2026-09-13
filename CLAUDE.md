@@ -31,10 +31,9 @@ fabricar un link. `forgot-password` responde 200 exista o no el email, para no
 filtrar qué direcciones están registradas.
 
 Los usuarios se administran en Configuración → Usuarios (`/api/usuarios`).
-**No hay roles**: cualquiera que entre ve y edita todo, así que dar de alta a
-alguien es darle la llave entera. Dos reglas evitan quedarse afuera, iguales a
-las de Facturacion-Web: no se puede borrar el propio usuario ni el último que
-queda; además borrar pide la contraseña del que borra. Y ojo con el seed:
+Dos reglas evitan quedarse afuera, iguales a las de Facturacion-Web: no se
+puede borrar el propio usuario ni el último que queda; además borrar pide la
+contraseña del que borra. Y ojo con el seed:
 `admin@vetadmin.local` no es un buzón real, así que a esa cuenta el link de
 recuperación **no le llega** — conviene que al menos un usuario tenga un mail
 de verdad.
@@ -54,6 +53,35 @@ propias** (`server/src/mailer.js`). La fuente de verdad es `vps/mail.md` en
   `mail_net`; el tramo que sí viaja por internet lo cifra y valida Postfix.
 - El remitente tiene que ser `@mail.frodosoft.com.ar`, único dominio verificado
   en Mailgun.
+
+## Permisos por usuario
+
+Cuatro módulos, en `server/src/permisos.js` (el front los espeja en
+`contexts/AuthContext.tsx`): `general` (dashboard, clientes, mascotas, turnos,
+historia clínica), `comercial` (ventas, productos, gastos), `usuarios` y
+`clinica` (editar los datos de la veterinaria). Se guardan en `User.permisos`
+como JSON de strings porque SQLite no tiene arrays; el default da los cuatro,
+así que nadie perdió acceso al agregarse la columna.
+
+Tres cosas para no romperlo:
+
+- 🔴 **El permiso se chequea en el backend** (`requirePermiso` montado sobre los
+  grupos de rutas en `app.js`). Esconder una opción del sidebar no es un
+  permiso: el endpoint se puede llamar a mano igual.
+- **Los catálogos (razas, enfermedades, cirugías, categorías) no se revocan** a
+  propósito: sin razas no se da de alta una mascota y sin enfermedades ni
+  cirugías no se carga una consulta. Por eso alguien sin ningún módulo igual
+  entra, y aterriza en `/settings/razas`.
+- **Nadie puede quitarse a sí mismo el acceso a Usuarios.** Como para editar
+  permisos ya hay que tenerlo, esa sola regla garantiza que siempre quede
+  alguien capaz de administrarlos: no hace falta contar cuántos lo tienen.
+
+`GET /api/bootstrap` sigue devolviendo todo: los permisos son de acceso a
+módulos, no de confidencialidad entre el personal de la misma veterinaria.
+
+Configuración dejó de ser una pantalla con pestañas: cada sección es una ruta
+(`/settings/<slug>`, ver `SECCIONES_CONFIG` en `pages/SettingsPage.tsx`) y entra
+al sidebar como submenú desplegable.
 
 ## Incidentes
 

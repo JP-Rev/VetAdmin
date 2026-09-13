@@ -5,6 +5,7 @@ import { prisma } from '../prisma.js'
 import { asyncRoute } from '../http.js'
 import { toUsuario } from '../serializers.js'
 import { requirePasswordConfirmation } from '../auth.js'
+import { PERMISOS, PERMISOS_VALIDOS, serializarPermisos } from '../permisos.js'
 
 /**
  * Alta y baja de usuarios de la app. No hay roles: cualquiera que entre ve
@@ -28,9 +29,12 @@ const passwordSchema = z
   .string()
   .min(MIN_PASSWORD, `La contraseña debe tener al menos ${MIN_PASSWORD} caracteres`)
 
+const permisosSchema = z.array(z.enum(PERMISOS_VALIDOS)).optional()
+
 const altaSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
+  permisos: permisosSchema,
 })
 
 // En la edicion todo es opcional: se manda solo lo que se cambia. Una
@@ -40,10 +44,12 @@ const edicionSchema = z
   .object({
     email: emailSchema.optional(),
     nuevaPassword: passwordSchema.optional(),
+    permisos: permisosSchema,
   })
-  .refine((d) => d.email !== undefined || d.nuevaPassword !== undefined, {
+  .refine((d) => d.email !== undefined || d.nuevaPassword !== undefined || d.permisos !== undefined, {
     message: 'No hay nada para cambiar',
   })
+
 
 router.get(
   '/',
@@ -56,14 +62,19 @@ router.get(
 router.post(
   '/',
   asyncRoute(async (req, res) => {
-    const { email, password } = altaSchema.parse(req.body)
+    const { email, password, permisos } = altaSchema.parse(req.body)
 
     if (await prisma.user.findUnique({ where: { email } })) {
       return res.status(400).json({ error: `Ya hay un usuario con el email ${email}` })
     }
 
     const usuario = await prisma.user.create({
-      data: { email, passwordHash: await bcrypt.hash(password, 10) },
+      data: {
+        email,
+        passwordHash: await bcrypt.hash(password, 10),
+        // Sin permisos explicitos entra con General, que es lo minimo util.
+        permisos: serializarPermisos(permisos ?? [PERMISOS.GENERAL]),
+      },
     })
     res.status(201).json(toUsuario(usuario))
   })
@@ -81,10 +92,19 @@ router.patch(
       }
     }
 
+    // Nadie puede sacarse a si mismo el acceso a Usuarios. Como para llegar
+    // hasta acá ya hay que tenerlo, esta sola regla garantiza que siempre
+    // quede alguien capaz de administrar permisos: no hace falta ademas
+    // contar cuantos lo tienen.
+    if (datos.permisos && req.params.id === req.user.id && !datos.permisos.includes(PERMISOS.USUARIOS)) {
+      return res.status(400).json({ error: 'No podés quitarte a vos mismo el acceso a Usuarios' })
+    }
+
     const usuario = await prisma.user.update({
       where: { id: req.params.id },
       data: {
         email: datos.email,
+        ...(datos.permisos ? { permisos: serializarPermisos(datos.permisos) } : {}),
         ...(datos.nuevaPassword
           ? {
               passwordHash: await bcrypt.hash(datos.nuevaPassword, 10),

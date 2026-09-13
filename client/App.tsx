@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth, Permiso } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { SupabaseDataProvider, useSupabaseData } from './contexts/SupabaseDataContext';
@@ -54,6 +54,30 @@ const ErrorScreen: React.FC<{ error: string; onRetry: () => void }> = ({ error, 
   </div>
 );
 
+/**
+ * A donde va alguien que entra a "/" o a una ruta que no le corresponde: la
+ * primera pantalla que si tiene. Un usuario sin General no puede aterrizar en
+ * el dashboard.
+ */
+const useInicio = (): string => {
+  const { puede } = useAuth();
+  if (puede('general')) return '/';
+  if (puede('comercial')) return '/ventas';
+  if (puede('usuarios')) return '/settings/usuarios';
+  if (puede('clinica')) return '/settings/clinica';
+  return '/settings/razas';
+};
+
+const Inicio: React.FC = () => <Navigate to={useInicio()} replace />;
+
+/** Ruta de un modulo: sin el permiso, redirige en vez de mostrar la pantalla. */
+const ConPermiso: React.FC<{ permiso: Permiso; children: React.ReactNode }> = ({ permiso, children }) => {
+  const { puede } = useAuth();
+  const inicio = useInicio();
+  if (!puede(permiso)) return <Navigate to={inicio} replace />;
+  return <>{children}</>;
+};
+
 const AppContent: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { printableContentForPortal, loading, error, refreshData } = useSupabaseData();
@@ -94,24 +118,27 @@ const AppContent: React.FC = () => {
 
             <main className="flex-grow px-4 py-5 sm:px-8 sm:py-6">
               <Routes>
-                <Route path="/" element={<DashboardPage />} />
-                <Route path="/clients" element={<ClientsPage />} />
-                <Route path="/clients/new" element={<ClientsPage />} />
-                <Route path="/clients/:clientId/edit" element={<ClientsPage />} />
-                <Route path="/clients/:clientId" element={<ClientsPage />} />
-                
-                <Route path="/pets" element={<PetsPage />} /> 
-                <Route path="/pets/:petId/history" element={<MedicalHistoryPage />} />
+                <Route path="/" element={<ConPermiso permiso="general"><DashboardPage /></ConPermiso>} />
+                <Route path="/clients" element={<ConPermiso permiso="general"><ClientsPage /></ConPermiso>} />
+                <Route path="/clients/new" element={<ConPermiso permiso="general"><ClientsPage /></ConPermiso>} />
+                <Route path="/clients/:clientId/edit" element={<ConPermiso permiso="general"><ClientsPage /></ConPermiso>} />
+                <Route path="/clients/:clientId" element={<ConPermiso permiso="general"><ClientsPage /></ConPermiso>} />
 
-                <Route path="/appointments" element={<AppointmentsPage />} />
-                
-                <Route path="/products" element={<ProductsPage />} />
-                <Route path="/ventas" element={<Ventas />} /> 
+                <Route path="/pets" element={<ConPermiso permiso="general"><PetsPage /></ConPermiso>} />
+                <Route path="/pets/:petId/history" element={<ConPermiso permiso="general"><MedicalHistoryPage /></ConPermiso>} />
 
+                <Route path="/appointments" element={<ConPermiso permiso="general"><AppointmentsPage /></ConPermiso>} />
+
+                <Route path="/products" element={<ConPermiso permiso="comercial"><ProductsPage /></ConPermiso>} />
+                <Route path="/ventas" element={<ConPermiso permiso="comercial"><Ventas /></ConPermiso>} />
+                <Route path="/expenses" element={<ConPermiso permiso="comercial"><ExpensesPage /></ConPermiso>} />
+
+                {/* Los catálogos no piden permiso; las dos secciones que sí lo
+                    piden las resuelve SettingsPage segun la ruta. */}
                 <Route path="/settings" element={<SettingsPage />} />
-                <Route path="/expenses" element={<ExpensesPage />} /> 
-                
-                <Route path="*" element={<Navigate to="/" replace />} />
+                <Route path="/settings/:seccion" element={<SettingsPage />} />
+
+                <Route path="*" element={<Inicio />} />
               </Routes>
             </main>
 

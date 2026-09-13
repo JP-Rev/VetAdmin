@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { UserMenu } from './UserMenu';
 import { GlobalSearch } from './GlobalSearch';
 import { Menu as IconMenu, Plus } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 interface AppHeaderProps {
   toggleSidebar: () => void;
@@ -11,6 +12,7 @@ interface AppHeaderProps {
 
 export const AppHeader: React.FC<AppHeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
   const navigate = useNavigate();
+  const { puede } = useAuth();
 
   return (
     <header className="sticky top-0 z-30 bg-surface/[0.86] backdrop-blur-[10px] border-b border-secondary-200 px-4 sm:px-8 py-3.5 flex items-center gap-3 sm:gap-5">
@@ -24,9 +26,12 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ toggleSidebar, isSidebarOp
         <IconMenu className="h-5 w-5" />
       </button>
 
-      <GlobalSearch />
+      {/* El buscador recorre clientes, mascotas y ventas: sin esos modulos no
+          tiene nada que ofrecer. */}
+      {(puede('general') || puede('comercial')) && <GlobalSearch />}
 
       <div className="flex items-center gap-2.5 ml-auto">
+        {puede('general') && (
         <button
           onClick={() => navigate('/appointments?action=new')}
           className="flex items-center gap-2 bg-primary-700 hover:bg-primary-800 text-white border-0 rounded-[10px] px-3.5 py-2.5 text-[13px] font-bold cursor-pointer transition-colors shadow-[0_8px_18px_-10px_rgba(15,118,110,0.9)]"
@@ -34,6 +39,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ toggleSidebar, isSidebarOp
           <Plus size={15} />
           <span className="hidden sm:inline">Nuevo turno</span>
         </button>
+        )}
         <UserMenu />
       </div>
     </header>

@@ -1,3 +1,4 @@
+import { parsePermisos } from './permisos.js'
 const dateOnly = (value) => new Date(value).toISOString().slice(0, 10)
 const epoch = (value) => new Date(value).getTime()
 
@@ -158,6 +159,7 @@ export const toGasto = (g) => ({
 export const toUsuario = (u) => ({
   id_usuario: u.id,
   email: u.email,
+  permisos: parsePermisos(u.permisos),
   createdAt: u.createdAt?.toISOString?.() ?? u.createdAt,
 })
 

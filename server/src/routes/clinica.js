@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { prisma } from '../prisma.js'
 import { asyncRoute } from '../http.js'
 import { toClinica, CLINICA_ID, getClinica } from '../serializers.js'
+import { PERMISOS, requirePermiso } from '../permisos.js'
 
 const router = Router()
 
@@ -22,6 +23,9 @@ router.get(
 
 router.put(
   '/',
+  // El GET lo puede hacer cualquiera (el nombre se muestra en toda la app);
+  // cambiar los datos de la veterinaria es lo que pide permiso.
+  requirePermiso(PERMISOS.CLINICA),
   asyncRoute(async (req, res) => {
     const data = clinicaSchema.parse(req.body)
     const payload = {

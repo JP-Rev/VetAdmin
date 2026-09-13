@@ -13,6 +13,11 @@ model User {
   passwordHash String
   createdAt    DateTime @default(now())
 
+  // Modulos a los que entra este usuario, como JSON de strings (SQLite no
+  // tiene arrays). El default da acceso a todo: los usuarios que ya existian
+  // cuando se agrego la columna no pierden nada.
+  permisos String @default("[\"general\",\"comercial\",\"usuarios\",\"clinica\"]")
+
   // Recuperacion de contraseña por mail. El token se guarda hasheado: el
   // valor crudo existe solo en el link que se manda por mail, nunca en la
   // base. Ambos campos se limpian al consumirlo.

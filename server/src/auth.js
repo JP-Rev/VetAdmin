@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken'
 import crypto from 'node:crypto'
 import { prisma } from './prisma.js'
 import { buildPasswordResetEmail, sendSystemEmail } from './mailer.js'
+import { parsePermisos } from './permisos.js'
 
 const COOKIE_NAME = 'vetadmin_token'
 const TOKEN_TTL = '7d'
@@ -46,7 +47,7 @@ export async function login(req, res) {
 
   const token = signToken(user)
   setAuthCookie(res, token)
-  res.json({ user: { id: user.id, email: user.email } })
+  res.json({ user: { id: user.id, email: user.email, permisos: parsePermisos(user.permisos) } })
 }
 
 export function logout(_req, res) {
@@ -54,21 +55,43 @@ export function logout(_req, res) {
   res.json({ ok: true })
 }
 
-export async function me(req, res) {
-  res.json({ user: req.user ?? null })
+export async function me(req, res, next) {
+  try {
+    if (!req.user) return res.json({ user: null })
+    // Los permisos salen de la base y no del token: si a alguien le sacan un
+    // modulo, lo pierde en la proxima carga sin esperar a que expire el JWT.
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } })
+    if (!user) return res.json({ user: null })
+    res.json({ user: { id: user.id, email: user.email, permisos: parsePermisos(user.permisos) } })
+  } catch (err) {
+    next(err)
+  }
 }
 
-export function requireAuth(req, res, next) {
+export async function requireAuth(req, res, next) {
   const token = req.cookies?.[COOKIE_NAME]
   if (!token) {
     return res.status(401).json({ error: 'No autenticado' })
   }
+  let payload
   try {
-    const payload = jwt.verify(token, getJwtSecret())
-    req.user = { id: payload.sub, email: payload.email }
-    next()
+    payload = jwt.verify(token, getJwtSecret())
   } catch {
     return res.status(401).json({ error: 'Sesión inválida o expirada' })
+  }
+
+  // Se relee el usuario en cada request: los permisos que valen son los de la
+  // base, no los que tenia cuando se firmo el token. Tambien corta la sesion
+  // de un usuario que fue eliminado.
+  try {
+    const user = await prisma.user.findUnique({ where: { id: payload.sub } })
+    if (!user) {
+      return res.status(401).json({ error: 'Sesión inválida o expirada' })
+    }
+    req.user = { id: user.id, email: user.email, permisos: parsePermisos(user.permisos) }
+    next()
+  } catch (err) {
+    next(err)
   }
 }
 
