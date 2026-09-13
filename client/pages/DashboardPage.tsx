@@ -43,39 +43,58 @@ interface KpiCardProps {
   linkTo: string;
 }
 
-const KpiCard: React.FC<KpiCardProps> = ({ icon, label, value, unit, delta, spark, linkTo }) => (
-  <Link
-    to={linkTo}
-    className="bg-surface border border-secondary-200 rounded-2xl px-[18px] pt-[18px] pb-4 flex flex-col gap-3.5
-               shadow-[0_1px_2px_rgba(15,31,29,0.04)] hover:shadow-[0_14px_30px_-18px_rgba(15,31,29,0.35)]
-               hover:border-secondary-300 transition-all duration-200"
-  >
-    <div className="flex items-center justify-between gap-2">
-      <span className="flex items-center gap-2.5 text-[12.5px] font-semibold text-secondary-600 min-w-0">
-        <span className="flex-shrink-0">{icon}</span>
-        <span className="truncate">{label}</span>
+/**
+ * En el celular entran de a dos por fila y se achican: menos padding, número
+ * más chico, sin sparkline (es decorativo) y el delta debajo del número en vez
+ * de al lado de la etiqueta, que a ~155px de ancho no entra.
+ */
+const KpiCard: React.FC<KpiCardProps> = ({ icon, label, value, unit, delta, spark, linkTo }) => {
+  const badge = (className: string) =>
+    delta ? (
+      <span
+        className={`font-mono text-[10px] sm:text-[10.5px] font-semibold px-[7px] py-[3px] rounded-full
+                    bg-primary-50 text-primary-700 ${className}`}
+      >
+        {delta}
       </span>
-      {delta && (
-        <span className="font-mono text-[10.5px] font-semibold px-[7px] py-[3px] rounded-full bg-primary-50 text-primary-700 flex-shrink-0">
-          {delta}
+    ) : null;
+
+  return (
+    <Link
+      to={linkTo}
+      className="bg-surface border border-secondary-200 rounded-xl sm:rounded-2xl
+                 px-3 py-3 sm:px-[18px] sm:pt-[18px] sm:pb-4 flex flex-col gap-1.5 sm:gap-3.5
+                 shadow-[0_1px_2px_rgba(15,31,29,0.04)] hover:shadow-[0_14px_30px_-18px_rgba(15,31,29,0.35)]
+                 hover:border-secondary-300 transition-all duration-200"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <span className="flex items-center gap-1.5 sm:gap-2.5 text-[11.5px] sm:text-[12.5px] font-semibold text-secondary-600 min-w-0">
+          <span className="flex-shrink-0">{icon}</span>
+          <span className="truncate">{label}</span>
         </span>
-      )}
-    </div>
-    <div className="flex items-baseline gap-[7px]">
-      <strong className="text-[34px] font-extrabold tracking-[-1.4px] tabular-nums text-secondary-900 leading-none">
-        {value}
-      </strong>
-      <span className="text-xs text-secondary-500">{unit}</span>
-    </div>
-    <div className="flex items-end gap-1 h-[34px]" aria-hidden="true">
-      {spark.map((h, i) => (
-        <span key={i} className="flex-1 flex flex-col justify-end h-full">
-          <span className="w-full rounded-t-[3px] rounded-b-[1px] bg-primary-200 block" style={{ height: h }} />
-        </span>
-      ))}
-    </div>
-  </Link>
-);
+        {badge('hidden sm:inline-block flex-shrink-0')}
+      </div>
+
+      <div className="flex items-baseline gap-[7px]">
+        <strong className="text-[26px] sm:text-[34px] font-extrabold tracking-[-1px] sm:tracking-[-1.4px]
+                           tabular-nums text-secondary-900 leading-none">
+          {value}
+        </strong>
+        <span className="text-[11px] sm:text-xs text-secondary-500 truncate">{unit}</span>
+      </div>
+
+      {badge('sm:hidden self-start max-w-full truncate')}
+
+      <div className="hidden sm:flex items-end gap-1 h-[34px]" aria-hidden="true">
+        {spark.map((h, i) => (
+          <span key={i} className="flex-1 flex flex-col justify-end h-full">
+            <span className="w-full rounded-t-[3px] rounded-b-[1px] bg-primary-200 block" style={{ height: h }} />
+          </span>
+        ))}
+      </div>
+    </Link>
+  );
+};
 
 interface RankItem {
   label: string;
@@ -280,7 +299,7 @@ export const DashboardPage: React.FC = () => {
       </div>
 
       {/* KPIs */}
-      <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(230px,1fr))]">
+      <div className="grid gap-2.5 sm:gap-4 grid-cols-2 sm:grid-cols-[repeat(auto-fit,minmax(230px,1fr))]">
         <KpiCard
           icon={<Users size={15} />} label="Clientes activos" value={clients.length} unit="registrados"
           delta={newClientsThisMonth > 0 ? `+${newClientsThisMonth} este mes` : undefined}
