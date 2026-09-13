@@ -21,6 +21,7 @@ import historialMedicoRouter from './routes/historialMedico.js'
 import attachmentsRouter from './routes/attachments.js'
 import pesajesRouter from './routes/pesajes.js'
 import clinicaRouter from './routes/clinica.js'
+import usuariosRouter from './routes/usuarios.js'
 
 export function createApp() {
   const app = express()
@@ -39,6 +40,7 @@ export function createApp() {
   app.post('/api/auth/forgot-password', forgotPassword)
   app.post('/api/auth/reset-password', resetPassword)
 
+  app.use('/api/usuarios', requireAuth, usuariosRouter)
   app.use('/api/bootstrap', requireAuth, bootstrapRouter)
   app.use('/api/clientes', requireAuth, clientesRouter)
   app.use('/api/mascotas', requireAuth, mascotasRouter)

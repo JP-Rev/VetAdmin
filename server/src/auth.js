@@ -26,7 +26,10 @@ const setAuthCookie = (res, token) => {
 }
 
 export async function login(req, res) {
-  const { email, password } = req.body || {}
+  const { password } = req.body || {}
+  // Se normaliza igual que en el alta y en la recuperacion: el teclado del
+  // celular capitaliza la primera letra y si no, el mail no matchea nunca.
+  const email = String(req.body?.email || '').trim().toLowerCase()
   if (!email || !password) {
     return res.status(400).json({ error: 'Email y contraseña son requeridos' })
   }

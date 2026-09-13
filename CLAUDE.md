@@ -30,6 +30,15 @@ sólo su sha256 (`User.resetTokenHash`): ni con la base en la mano se puede
 fabricar un link. `forgot-password` responde 200 exista o no el email, para no
 filtrar qué direcciones están registradas.
 
+Los usuarios se administran en Configuración → Usuarios (`/api/usuarios`).
+**No hay roles**: cualquiera que entre ve y edita todo, así que dar de alta a
+alguien es darle la llave entera. Dos reglas evitan quedarse afuera, iguales a
+las de Facturacion-Web: no se puede borrar el propio usuario ni el último que
+queda; además borrar pide la contraseña del que borra. Y ojo con el seed:
+`admin@vetadmin.local` no es un buzón real, así que a esa cuenta el link de
+recuperación **no le llega** — conviene que al menos un usuario tenga un mail
+de verdad.
+
 El link llega como `?reset=<token>` **antes del hash** (`https://host/?reset=…#/`)
 porque el front usa HashRouter; `LoginForm` lo lee de `window.location.search`.
 

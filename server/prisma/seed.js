@@ -97,7 +97,9 @@ async function main() {
     if (!existing) await prisma.cirugia.create({ data: cirugia })
   }
 
-  const adminEmail = process.env.SEED_ADMIN_EMAIL
+  // Normalizado como en el login: si el .env lo trae con mayusculas, el
+  // usuario quedaria guardado con mayusculas y despues no podria entrar.
+  const adminEmail = process.env.SEED_ADMIN_EMAIL?.trim().toLowerCase()
   const adminPassword = process.env.SEED_ADMIN_PASSWORD
   if (adminEmail && adminPassword) {
     const passwordHash = await bcrypt.hash(adminPassword, 10)

@@ -4,8 +4,9 @@ import { Raza, RazaForm, Enfermedad, EnfermedadForm, Cirugia, CirugiaForm, Espec
 import { Modal } from '../components/Modal';
 import { Button } from '../components/common/Button';
 import { FormField } from '../components/common/FormField';
-import { Plus, Edit3, Trash2, Settings as IconSettings, PawPrint, Thermometer, Scissors, Tags, Building2, Check, Search, X } from 'lucide-react';
+import { Plus, Edit3, Trash2, Settings as IconSettings, PawPrint, Thermometer, Scissors, Tags, Building2, Check, Search, X, Users } from 'lucide-react';
 import { ESPECIES } from '../constants';
+import { UsuariosSettings } from '../components/settings/UsuariosSettings';
 
 
 /** Encabezado de una pestaña: título, buscador y acción principal. */
@@ -54,7 +55,7 @@ const TabHeader: React.FC<{
   </div>
 );
 
-type TabKey = 'clinic' | 'breeds' | 'diseases' | 'surgeries' | 'productCategories';
+type TabKey = 'clinic' | 'users' | 'breeds' | 'diseases' | 'surgeries' | 'productCategories';
 
 // Datos de la veterinaria: fila singleton, se edita en vez de crearse/borrarse.
 const ClinicSettingsForm: React.FC = () => {
@@ -468,6 +469,8 @@ export const SettingsPage: React.FC = () => {
     switch (activeTab) {
       case 'clinic':
         return <ClinicSettingsForm />;
+      case 'users':
+        return <UsuariosSettings />;
       case 'breeds':
         return (
           <section>
@@ -633,6 +636,7 @@ export const SettingsPage: React.FC = () => {
 
   const tabs = [
     { key: 'clinic', label: 'Clínica', icon: <Building2 size={18} /> },
+    { key: 'users', label: 'Usuarios', icon: <Users size={18} /> },
     { key: 'breeds', label: 'Razas', icon: <PawPrint size={18} /> },
     { key: 'diseases', label: 'Enfermedades', icon: <Thermometer size={18} /> },
     { key: 'surgeries', label: 'Tipos de Cirugía', icon: <Scissors size={18} /> },

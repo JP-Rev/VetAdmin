@@ -154,6 +154,13 @@ export const toGasto = (g) => ({
   lastModified: epoch(g.updatedAt),
 })
 
+// Nunca expone passwordHash ni los campos del token de recuperacion.
+export const toUsuario = (u) => ({
+  id_usuario: u.id,
+  email: u.email,
+  createdAt: u.createdAt?.toISOString?.() ?? u.createdAt,
+})
+
 export const CLINICA_ID = 'default'
 
 export const toClinica = (c) => ({
