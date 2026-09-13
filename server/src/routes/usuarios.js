@@ -5,14 +5,16 @@ import { prisma } from '../prisma.js'
 import { asyncRoute } from '../http.js'
 import { toUsuario } from '../serializers.js'
 import { requirePasswordConfirmation } from '../auth.js'
-import { PERMISOS, PERMISOS_VALIDOS, serializarPermisos } from '../permisos.js'
+import { PERMISOS, PERMISOS_VALIDOS, serializarPermisos, requireAdmin } from '../permisos.js'
 
 /**
- * Alta y baja de usuarios de la app. No hay roles: cualquiera que entre ve
- * todo, asi que esto es en la practica "quien tiene llave del sistema".
+ * Modulo de usuarios. El permiso `usuarios` deja VER la lista; escribirla
+ * (crear, editar, borrar, repartir permisos y marcar admin) pide ademas la
+ * marca de admin -- por eso el GET va suelto y el resto lleva requireAdmin.
  *
- * Dos reglas que evitan quedarse afuera, iguales a las de Facturacion-Web:
- * no se puede borrar el propio usuario ni el ultimo que queda.
+ * Tres reglas que evitan quedarse afuera: no se puede borrar el propio
+ * usuario, ni el ultimo que queda, ni sacarse a uno mismo admin o el acceso a
+ * Usuarios.
  */
 const router = Router()
 
@@ -35,6 +37,7 @@ const altaSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
   permisos: permisosSchema,
+  esAdmin: z.boolean().optional(),
 })
 
 // En la edicion todo es opcional: se manda solo lo que se cambia. Una
@@ -45,10 +48,16 @@ const edicionSchema = z
     email: emailSchema.optional(),
     nuevaPassword: passwordSchema.optional(),
     permisos: permisosSchema,
+    esAdmin: z.boolean().optional(),
   })
-  .refine((d) => d.email !== undefined || d.nuevaPassword !== undefined || d.permisos !== undefined, {
-    message: 'No hay nada para cambiar',
-  })
+  .refine(
+    (d) =>
+      d.email !== undefined ||
+      d.nuevaPassword !== undefined ||
+      d.permisos !== undefined ||
+      d.esAdmin !== undefined,
+    { message: 'No hay nada para cambiar' }
+  )
 
 
 router.get(
@@ -61,8 +70,9 @@ router.get(
 
 router.post(
   '/',
+  requireAdmin,
   asyncRoute(async (req, res) => {
-    const { email, password, permisos } = altaSchema.parse(req.body)
+    const { email, password, permisos, esAdmin } = altaSchema.parse(req.body)
 
     if (await prisma.user.findUnique({ where: { email } })) {
       return res.status(400).json({ error: `Ya hay un usuario con el email ${email}` })
@@ -74,6 +84,8 @@ router.post(
         passwordHash: await bcrypt.hash(password, 10),
         // Sin permisos explicitos entra con General, que es lo minimo util.
         permisos: serializarPermisos(permisos ?? [PERMISOS.GENERAL]),
+        // Explicito: una cuenta nueva no es admin salvo que se lo marquen.
+        esAdmin: esAdmin ?? false,
       },
     })
     res.status(201).json(toUsuario(usuario))
@@ -82,6 +94,7 @@ router.post(
 
 router.patch(
   '/:id',
+  requireAdmin,
   asyncRoute(async (req, res) => {
     const datos = edicionSchema.parse(req.body)
 
@@ -92,12 +105,17 @@ router.patch(
       }
     }
 
-    // Nadie puede sacarse a si mismo el acceso a Usuarios. Como para llegar
-    // hasta acá ya hay que tenerlo, esta sola regla garantiza que siempre
-    // quede alguien capaz de administrar permisos: no hace falta ademas
-    // contar cuantos lo tienen.
-    if (datos.permisos && req.params.id === req.user.id && !datos.permisos.includes(PERMISOS.USUARIOS)) {
-      return res.status(400).json({ error: 'No podés quitarte a vos mismo el acceso a Usuarios' })
+    // Nadie puede desarmar su propio acceso a la administracion de usuarios.
+    // Como para llegar hasta acá ya hay que ser admin y tener el modulo, estas
+    // dos reglas garantizan que siempre quede alguien capaz de administrar:
+    // no hace falta ademas contar cuantos hay.
+    if (req.params.id === req.user.id) {
+      if (datos.permisos && !datos.permisos.includes(PERMISOS.USUARIOS)) {
+        return res.status(400).json({ error: 'No podés quitarte a vos mismo el acceso a Usuarios' })
+      }
+      if (datos.esAdmin === false) {
+        return res.status(400).json({ error: 'No podés quitarte a vos mismo la marca de admin' })
+      }
     }
 
     const usuario = await prisma.user.update({
@@ -105,6 +123,7 @@ router.patch(
       data: {
         email: datos.email,
         ...(datos.permisos ? { permisos: serializarPermisos(datos.permisos) } : {}),
+        ...(datos.esAdmin !== undefined ? { esAdmin: datos.esAdmin } : {}),
         ...(datos.nuevaPassword
           ? {
               passwordHash: await bcrypt.hash(datos.nuevaPassword, 10),
@@ -122,6 +141,7 @@ router.patch(
 
 router.delete(
   '/:id',
+  requireAdmin,
   // Borrar un usuario deja a alguien afuera del sistema: se pide la contraseña
   // del que lo esta borrando, mismo criterio que los adjuntos y los eventos de
   // historia clinica.

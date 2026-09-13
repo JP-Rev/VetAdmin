@@ -14,6 +14,8 @@ export const PERMISOS: { id: Permiso; label: string; detalle: string }[] = [
 interface AuthUser {
   id: string;
   email: string;
+  /** Admin = puede escribir en el módulo Usuarios. Sin esto, sólo mirar. */
+  esAdmin: boolean;
   permisos: Permiso[];
 }
 
@@ -22,6 +24,7 @@ interface AuthContextType {
   loading: boolean;
   /** true si el usuario tiene ese módulo. Los catálogos no piden permiso. */
   puede: (permiso: Permiso) => boolean;
+  esAdmin: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
@@ -60,6 +63,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user,
     loading,
     puede,
+    esAdmin: Boolean(user?.esAdmin),
     signIn,
     signOut,
   };

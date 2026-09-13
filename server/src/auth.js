@@ -47,7 +47,7 @@ export async function login(req, res) {
 
   const token = signToken(user)
   setAuthCookie(res, token)
-  res.json({ user: { id: user.id, email: user.email, permisos: parsePermisos(user.permisos) } })
+  res.json({ user: { id: user.id, email: user.email, esAdmin: user.esAdmin, permisos: parsePermisos(user.permisos) } })
 }
 
 export function logout(_req, res) {
@@ -62,7 +62,7 @@ export async function me(req, res, next) {
     // modulo, lo pierde en la proxima carga sin esperar a que expire el JWT.
     const user = await prisma.user.findUnique({ where: { id: req.user.id } })
     if (!user) return res.json({ user: null })
-    res.json({ user: { id: user.id, email: user.email, permisos: parsePermisos(user.permisos) } })
+    res.json({ user: { id: user.id, email: user.email, esAdmin: user.esAdmin, permisos: parsePermisos(user.permisos) } })
   } catch (err) {
     next(err)
   }
@@ -88,7 +88,7 @@ export async function requireAuth(req, res, next) {
     if (!user) {
       return res.status(401).json({ error: 'Sesión inválida o expirada' })
     }
-    req.user = { id: user.id, email: user.email, permisos: parsePermisos(user.permisos) }
+      req.user = { id: user.id, email: user.email, esAdmin: user.esAdmin, permisos: parsePermisos(user.permisos) }
     next()
   } catch (err) {
     next(err)

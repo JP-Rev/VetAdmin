@@ -56,6 +56,12 @@ propias** (`server/src/mailer.js`). La fuente de verdad es `vps/mail.md` en
 
 ## Permisos por usuario
 
+**Marca de admin** (`User.esAdmin`, default `true` por lo mismo que abajo):
+separa ver de escribir en el módulo Usuarios. Con el permiso `usuarios` a secas
+se ve la lista; crear, editar, eliminar, repartir permisos y marcar admin pide
+además ser admin (`requireAdmin` en `permisos.js`, montado sobre POST/PATCH/
+DELETE de `routes/usuarios.js`). Nadie puede quitarse a sí mismo la marca.
+
 Cuatro módulos, en `server/src/permisos.js` (el front los espeja en
 `contexts/AuthContext.tsx`): `general` (dashboard, clientes, mascotas, turnos,
 historia clínica), `comercial` (ventas, productos, gastos), `usuarios` y
@@ -72,9 +78,10 @@ Tres cosas para no romperlo:
   propósito: sin razas no se da de alta una mascota y sin enfermedades ni
   cirugías no se carga una consulta. Por eso alguien sin ningún módulo igual
   entra, y aterriza en `/settings/razas`.
-- **Nadie puede quitarse a sí mismo el acceso a Usuarios.** Como para editar
-  permisos ya hay que tenerlo, esa sola regla garantiza que siempre quede
-  alguien capaz de administrarlos: no hace falta contar cuántos lo tienen.
+- **Nadie puede quitarse a sí mismo el acceso a Usuarios ni la marca de
+  admin.** Como para editar permisos ya hay que tener las dos cosas, esas
+  reglas garantizan que siempre quede alguien capaz de administrar: no hace
+  falta contar cuántos hay.
 
 `GET /api/bootstrap` sigue devolviendo todo: los permisos son de acceso a
 módulos, no de confidencialidad entre el personal de la misma veterinaria.

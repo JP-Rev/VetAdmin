@@ -5,11 +5,12 @@ import { Modal } from '../Modal';
 import { Button } from '../common/Button';
 import { FormField } from '../common/FormField';
 import { PasswordConfirmDialog } from '../common/PasswordConfirmDialog';
-import { Plus, Edit3, Trash2, Search, X, UserRound, ShieldAlert } from 'lucide-react';
+import { Plus, Edit3, Trash2, Search, X, UserRound, ShieldAlert, ShieldCheck } from 'lucide-react';
 
 interface Usuario {
   id_usuario: string;
   email: string;
+  esAdmin: boolean;
   permisos: Permiso[];
   createdAt: string;
 }
@@ -27,7 +28,7 @@ const mismosPermisos = (a: Permiso[], b: Permiso[]) =>
  * así que esta pantalla se maneja su propia lista.
  */
 export const UsuariosSettings: React.FC = () => {
-  const { user } = useAuth();
+  const { user, esAdmin } = useAuth();
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,6 +39,7 @@ export const UsuariosSettings: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [permisos, setPermisos] = useState<Permiso[]>(['general']);
+  const [marcarAdmin, setMarcarAdmin] = useState(false);
   const [errorForm, setErrorForm] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
 
@@ -66,6 +68,7 @@ export const UsuariosSettings: React.FC = () => {
     setEmail(usuario?.email ?? '');
     setPassword('');
     setPermisos(usuario?.permisos ?? ['general']);
+    setMarcarAdmin(usuario?.esAdmin ?? false);
     setErrorForm(null);
     setModalAbierto(true);
   };
@@ -88,13 +91,14 @@ export const UsuariosSettings: React.FC = () => {
         if (email.trim().toLowerCase() !== editando.email) cambios.email = email;
         if (password) cambios.nuevaPassword = password;
         if (!mismosPermisos(permisos, editando.permisos)) cambios.permisos = permisos;
+        if (marcarAdmin !== editando.esAdmin) cambios.esAdmin = marcarAdmin;
         if (Object.keys(cambios).length === 0) {
           setModalAbierto(false);
           return;
         }
         await apiPatch(`/usuarios/${editando.id_usuario}`, cambios);
       } else {
-        await apiPost('/usuarios', { email, password, permisos });
+        await apiPost('/usuarios', { email, password, permisos, esAdmin: marcarAdmin });
       }
       await recargar();
       setModalAbierto(false);
@@ -123,7 +127,7 @@ export const UsuariosSettings: React.FC = () => {
                 : `${filtrados.length} de ${usuarios.length} usuario(s)`}
             </p>
           </div>
-          <Button onClick={() => abrirModal()} leftIcon={<Plus />}>Nuevo Usuario</Button>
+          {esAdmin && <Button onClick={() => abrirModal()} leftIcon={<Plus />}>Nuevo Usuario</Button>}
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
@@ -150,9 +154,15 @@ export const UsuariosSettings: React.FC = () => {
       <div className="flex items-start gap-2.5 bg-warning-50 border border-warning-200 rounded-xl px-4 py-3 mb-4">
         <ShieldAlert size={17} className="text-warning-700 flex-shrink-0 mt-0.5" />
         <p className="m-0 text-[12.5px] text-warning-800">
-          Los permisos son de acceso a módulos, no de confidencialidad: quien tiene un
-          módulo lo tiene entero. Conviene además que al menos una cuenta tenga un email
-          real, porque es a donde llega el link para recuperar la contraseña.
+          {esAdmin ? (
+            <>
+              Los permisos son de acceso a módulos, no de confidencialidad: quien tiene un
+              módulo lo tiene entero. Conviene además que al menos una cuenta tenga un email
+              real, porque es a donde llega el link para recuperar la contraseña.
+            </>
+          ) : (
+            <>Podés ver los usuarios pero no modificarlos. Para eso hace falta una cuenta admin.</>
+          )}
         </p>
       </div>
 
@@ -169,7 +179,9 @@ export const UsuariosSettings: React.FC = () => {
               <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase">Email</th>
               <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase">Módulos</th>
               <th className="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase">Alta</th>
-              <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase">Acciones</th>
+              {esAdmin && (
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase">Acciones</th>
+              )}
             </tr>
           </thead>
           <tbody className="bg-surface divide-y divide-secondary-200">
@@ -180,9 +192,16 @@ export const UsuariosSettings: React.FC = () => {
                     <UserRound size={15} className="text-secondary-400 flex-shrink-0" />
                     <span className="min-w-0">
                       <span className="block break-all">{u.email}</span>
-                      {soyYo(u) && (
-                        <span className="text-[11px] font-semibold text-primary-700">tu cuenta</span>
-                      )}
+                      <span className="flex flex-wrap items-center gap-1.5">
+                        {u.esAdmin && (
+                          <span className="inline-flex items-center gap-1 text-[10.5px] font-bold px-2 py-0.5 rounded-full bg-accent-50 text-accent-700">
+                            <ShieldCheck size={11} />admin
+                          </span>
+                        )}
+                        {soyYo(u) && (
+                          <span className="text-[11px] font-semibold text-primary-700">tu cuenta</span>
+                        )}
+                      </span>
                       {/* En el celular no hay columna de módulos: van acá abajo. */}
                       <span className="md:hidden block text-[11px] text-secondary-500">
                         {u.permisos.length
@@ -209,20 +228,22 @@ export const UsuariosSettings: React.FC = () => {
                 <td className="hidden lg:table-cell px-6 py-4 whitespace-nowrap text-sm text-secondary-600">
                   {new Date(u.createdAt).toLocaleDateString('es-AR')}
                 </td>
-                <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm space-x-1">
-                  <Button size="sm" variant="ghost" onClick={() => abrirModal(u)}
-                          title="Editar usuario" className="text-accent-600 p-1.5">
-                    <Edit3 size={16} />
-                  </Button>
-                  <Button
-                    size="sm" variant="ghost" onClick={() => setAEliminar(u)}
-                    disabled={soyYo(u)}
-                    title={soyYo(u) ? 'No podés eliminar tu propio usuario' : 'Eliminar usuario'}
-                    className="text-error-600 p-1.5 disabled:text-secondary-300"
-                  >
-                    <Trash2 size={16} />
-                  </Button>
-                </td>
+                {esAdmin && (
+                  <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm space-x-1">
+                    <Button size="sm" variant="ghost" onClick={() => abrirModal(u)}
+                            title="Editar usuario" className="text-accent-600 p-1.5">
+                      <Edit3 size={16} />
+                    </Button>
+                    <Button
+                      size="sm" variant="ghost" onClick={() => setAEliminar(u)}
+                      disabled={soyYo(u)}
+                      title={soyYo(u) ? 'No podés eliminar tu propio usuario' : 'Eliminar usuario'}
+                      className="text-error-600 p-1.5 disabled:text-secondary-300"
+                    >
+                      <Trash2 size={16} />
+                    </Button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -254,6 +275,28 @@ export const UsuariosSettings: React.FC = () => {
               required={!editando}
               placeholder={editando ? 'Dejala vacía para no cambiarla' : `Al menos ${MIN_PASSWORD} caracteres`}
             />
+
+            <label className={`flex items-start gap-2.5 border rounded-xl px-4 py-3 ${
+              editandoMiCuenta ? 'border-secondary-200 opacity-60' : 'border-accent-200 bg-accent-50/40 cursor-pointer'
+            }`}>
+              <input
+                type="checkbox"
+                checked={marcarAdmin}
+                disabled={editandoMiCuenta}
+                onChange={e => setMarcarAdmin(e.target.checked)}
+                className="mt-0.5 rounded border-secondary-300 flex-shrink-0"
+              />
+              <span className="min-w-0">
+                <span className="flex items-center gap-1.5 text-[13.5px] font-semibold text-secondary-900">
+                  <ShieldCheck size={15} className="text-accent-600" />Cuenta admin
+                </span>
+                <span className="block text-[11.5px] text-secondary-500">
+                  {editandoMiCuenta
+                    ? 'No podés quitarte la marca a vos mismo.'
+                    : 'Puede crear, editar y eliminar usuarios. Sin esto, con el módulo Usuarios sólo los ve.'}
+                </span>
+              </span>
+            </label>
 
             <fieldset className="border border-secondary-200 rounded-xl px-4 pt-3 pb-4">
               <legend className="px-1.5 text-[12.5px] font-semibold text-secondary-600">Módulos</legend>

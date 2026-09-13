@@ -159,6 +159,7 @@ export const toGasto = (g) => ({
 export const toUsuario = (u) => ({
   id_usuario: u.id,
   email: u.email,
+  esAdmin: u.esAdmin,
   permisos: parsePermisos(u.permisos),
   createdAt: u.createdAt?.toISOString?.() ?? u.createdAt,
 })

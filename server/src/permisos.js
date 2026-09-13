@@ -60,3 +60,14 @@ export const requirePermiso = (permiso) => (req, res, next) => {
   }
   next()
 }
+
+/**
+ * Escribir en el modulo Usuarios. Ver la lista alcanza con el permiso
+ * `usuarios`; crear, editar, borrar y repartir permisos pide ser admin.
+ */
+export const requireAdmin = (req, res, next) => {
+  if (!req.user?.esAdmin) {
+    return res.status(403).json({ error: 'Solo una cuenta admin puede modificar usuarios' })
+  }
+  next()
+}
