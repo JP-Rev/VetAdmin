@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Turno, EstadoTurno } from '../types';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { aISO } from '../lib/fecha';
 
 interface AppointmentCalendarViewProps {
   appointments: Turno[];
@@ -83,7 +84,7 @@ export const AppointmentCalendarView: React.FC<AppointmentCalendarViewProps> = (
           </div>
         ))}
         {days.map((d, index) => {
-          const dateKey = d.toISOString().split('T')[0];
+          const dateKey = aISO(d);
           const appsOnThisDate = appointmentsByDate[dateKey] || [];
           const isToday = d.toDateString() === new Date().toDateString();
           const isCurrentMonth = d.getMonth() === currentDate.getMonth();

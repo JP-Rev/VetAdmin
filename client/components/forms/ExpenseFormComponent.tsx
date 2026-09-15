@@ -4,6 +4,7 @@ import { useSupabaseData } from '../../contexts/SupabaseDataContext';
 import { Button } from '../common/Button';
 import { FormField } from '../common/FormField';
 import { CATEGORIAS_GASTO } from '../../constants';
+import { hoyISO } from '../../lib/fecha';
 
 interface ExpenseFormProps {
   initialData?: Gasto;
@@ -16,7 +17,7 @@ export const ExpenseFormComponent: React.FC<ExpenseFormProps> = ({ initialData, 
   const [formData, setFormData] = useState<GastoForm>(
     initialData
       ? { fecha: initialData.fecha, descripcion: initialData.descripcion, monto: initialData.monto, categoria: initialData.categoria }
-      : { fecha: new Date().toISOString().split('T')[0], descripcion: '', monto: 0, categoria: CategoriaGasto.VARIOS }
+      : { fecha: hoyISO(), descripcion: '', monto: 0, categoria: CategoriaGasto.VARIOS }
   );
   const [errors, setErrors] = useState<Partial<Record<keyof GastoForm, string>>>({});
 

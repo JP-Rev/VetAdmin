@@ -7,6 +7,7 @@ import { Button } from '../components/common/Button';
 import { FileText, PawPrint, Users, Plus, Search, ShoppingCart, ChevronRight } from 'lucide-react';
 import { SpeciesIcon } from '../lib/speciesIcon';
 import { getPetAge } from '../lib/petAge';
+import { PetVitals } from '../components/common/PetVitals';
 import {
   FilterCard, DataCard, TableWrap, Th, Td, Tr, RowActions, IconAction, EmptyState,
 } from '../components/common/ListLayout';
@@ -244,13 +245,17 @@ export const PetsPage: React.FC = () => {
                         </span>
                         <span className="min-w-0">
                           <span className="block font-semibold text-secondary-900">{pet.nombre}</span>
-                          {/* En el celular no hay columnas para esto, así que va acá. */}
+                          {/* En el celular no hay columnas para esto, así que va acá.
+                              Edad y peso salen como pastillas: en escritorio ya tienen
+                              columna propia con su encabezado, acá no. */}
                           <span className="sm:hidden block text-[11.5px] text-secondary-500">
-                            {pet.especie} · {pet.breedName}
-                            {edad && ` · ${edad.short}`}
-                            {peso && ` · ${peso.peso.toLocaleString('es-AR')} kg`}
-                            {` · ${pet.ownerName}`}
+                            {pet.especie} · {pet.breedName} · {pet.ownerName}
                           </span>
+                          <PetVitals
+                            className="sm:hidden mt-1"
+                            fechaNacimiento={pet.fecha_nacimiento}
+                            peso={peso?.peso ?? null}
+                          />
                         </span>
                       </span>
                     </Td>

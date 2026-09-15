@@ -6,8 +6,9 @@ import { Modal } from '../Modal';
 import { AppointmentCalendarView } from '../AppointmentCalendarView';
 import { DollarSign, TrendingUp, TrendingDown, Landmark, CreditCard as CreditCardIcon, AlertCircle, Calendar, BarChart3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { aISO, hoyISO } from '../../lib/fecha';
 
-const getTodayDateString = () => new Date().toISOString().split('T')[0];
+const getTodayDateString = () => hoyISO();
 
 const PaymentMethodIcon: React.FC<{ method: MetodoPago, className?: string }> = ({ method, className="h-4 w-4 mr-1.5" }) => {
   switch (method) {
@@ -183,7 +184,7 @@ export const DailyCashFlow: React.FC = () => {
   }, [selectedDate, getDailyCashFlowReport]);
 
   const handleCalendarDateSelect = (date: Date) => {
-    setSelectedDate(date.toISOString().split('T')[0]);
+    setSelectedDate(aISO(date));
     setIsCalendarModalOpen(false);
   };
 

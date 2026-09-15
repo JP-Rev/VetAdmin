@@ -12,6 +12,7 @@ import { SpeciesIcon } from '../lib/speciesIcon';
 import {
   Card, DataCard, TableWrap, Th, Td, Tr, RowActions, IconAction, EditIcon, DeleteIcon, ViewIcon, EmptyState,
 } from '../components/common/ListLayout';
+import { aISO, hoyISO } from '../lib/fecha';
 
 // Appointment Form Component
 interface AppointmentFormProps {
@@ -34,7 +35,7 @@ const AppointmentFormComponent: React.FC<AppointmentFormProps> = ({ initialData,
         const pet = getPetById(preselectedPetId);
         if (pet) determinedClientId = pet.id_cliente;
     }
-    return { cliente_id: determinedClientId, mascota_id: preselectedPetId || '', fecha: new Date().toISOString().split('T')[0], hora: '09:00', motivo: '' };
+    return { cliente_id: determinedClientId, mascota_id: preselectedPetId || '', fecha: hoyISO(), hora: '09:00', motivo: '' };
   });
 
   const [errors, setErrors] = useState<Partial<Record<keyof TurnoForm, string>>>({});
@@ -241,7 +242,7 @@ export const AppointmentsPage: React.FC = () => {
   };
 
   const handleCalendarDateSelect = (date: Date, _appointmentsOnDate: Turno[]) => {
-    setSelectedDateFilter(date.toISOString().split('T')[0]);
+    setSelectedDateFilter(aISO(date));
     setViewMode('list'); 
   };
 

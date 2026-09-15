@@ -10,6 +10,7 @@ import { Plus, ShoppingCart, Trash2, ChevronDown, DollarSign, CreditCard, Printe
 import {
   DataCard, TableWrap, Th, Td, Tr, RowActions, IconAction, EmptyState,
 } from '../components/common/ListLayout';
+import { hoyISO } from '../lib/fecha';
 
 // Venta Form Component
 interface VentaFormProps {
@@ -321,7 +322,7 @@ export const Ventas: React.FC = () => {
   const [isFinancialReportModalOpen, setIsFinancialReportModalOpen] = useState(false);
   const [selectedVentaForPayment, setSelectedVentaForPayment] = useState<Venta | undefined>(undefined); 
   const [expandedVentaId, setExpandedVentaId] = useState<string | null>(null); 
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState<string>(hoyISO());
   const [preselectedClientIdForForm, setPreselectedClientIdForForm] = useState<string | undefined>(undefined);
   const [preselectedPetIdForForm, setPreselectedPetIdForForm] = useState<string | undefined>(undefined);
 

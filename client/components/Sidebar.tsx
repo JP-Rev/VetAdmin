@@ -10,6 +10,7 @@ import { FrodosoftLogo, FrodosoftWordmark } from './FrodosoftLogo';
 import { useAuth } from '../contexts/AuthContext';
 import { SECCIONES_CONFIG } from '../pages/SettingsPage';
 import { ChevronDown } from 'lucide-react';
+import { hoyISO } from '../lib/fecha';
 
 interface NavItemProps {
   to: string;
@@ -74,7 +75,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
   React.useEffect(() => { if (enConfig) setConfigAbierto(true); }, [enConfig]);
   // El badge cuenta los turnos pendientes de HOY (accionable), no todos los
   // futuros: ese número crece sin techo y deja de significar algo.
-  const hoy = new Date().toISOString().split('T')[0];
+  const hoy = hoyISO();
   const turnosCount = appointments.filter(a => a.fecha === hoy && a.estado === EstadoTurno.PENDIENTE).length;
 
   const handleMobileLinkClick = () => {

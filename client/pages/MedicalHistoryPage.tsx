@@ -14,6 +14,7 @@ import { PetFormComponent } from './ClientsPage';
 import {
   AttachmentPicker, FileThumb, MAX_ATTACHMENT_BYTES, fmtFileSize,
 } from '../components/common/AttachmentPicker';
+import { hoyISO } from '../lib/fecha';
 
 /**
  * Boton de accion solo con icono: la etiqueta va en title/aria-label y aparece
@@ -59,7 +60,7 @@ const NewEventFormComponent: React.FC<NewEventFormProps> = ({ petId, onSave, onC
     const { addMedicalHistoryEvent, diseases, surgeries, recordPetDisease, recordPetSurgery } = useSupabaseData();
     const [tipoEvento, setTipoEvento] = useState<TipoEventoHistorial>(TipoEventoHistorial.CONSULTA);
     const [descripcion, setDescripcion] = useState('');
-    const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
+    const [fecha, setFecha] = useState(hoyISO());
 
     const [selectedDiseaseId, setSelectedDiseaseId] = useState<string>('');
     const [diseaseNotes, setDiseaseNotes] = useState<string>('');
@@ -371,7 +372,9 @@ export const MedicalHistoryPage: React.FC = () => {
   const [editandoMascota, setEditandoMascota] = useState(false);
   const [pesoModalAbierto, setPesoModalAbierto] = useState(false);
   const [nuevoPeso, setNuevoPeso] = useState('');
-  const [fechaPeso, setFechaPeso] = useState('');
+  // Propuesta: hoy. Es la fecha en el 99% de los casos, y dejarla vacía
+  // obligaba a abrir el datepicker aunque fuese a poner justamente hoy.
+  const [fechaPeso, setFechaPeso] = useState(hoyISO());
   const [pesoError, setPesoError] = useState<string | null>(null);
 
   const toggleEvento = (id: string) =>
@@ -580,7 +583,11 @@ export const MedicalHistoryPage: React.FC = () => {
                 )}
               </span>
             )}
-            <IconBtn label="Registrar peso" variant="primary" onClick={() => setPesoModalAbierto(true)}>
+            <IconBtn
+              label="Registrar peso"
+              variant="primary"
+              onClick={() => { setFechaPeso(hoyISO()); setNuevoPeso(''); setPesoError(null); setPesoModalAbierto(true); }}
+            >
               <Plus size={16} />
             </IconBtn>
           </div>
@@ -646,7 +653,7 @@ export const MedicalHistoryPage: React.FC = () => {
               }
               try {
                 await addPesaje(pet.id_mascota, nuevoPeso, fechaPeso || undefined);
-                setNuevoPeso(''); setFechaPeso(''); setPesoModalAbierto(false);
+                setNuevoPeso(''); setFechaPeso(hoyISO()); setPesoModalAbierto(false);
               } catch (err) {
                 setPesoError(err instanceof Error ? err.message : 'No se pudo registrar el peso.');
               }
@@ -665,7 +672,6 @@ export const MedicalHistoryPage: React.FC = () => {
                 <input type="date" value={fechaPeso} onChange={e => setFechaPeso(e.target.value)}
                        className="w-full bg-surface border border-secondary-300 rounded-[10px] px-3.5 py-2.5 text-[13.5px]
                                   text-secondary-900 outline-none focus:border-primary-500 transition-colors" />
-                <span className="block mt-1 text-[11.5px] text-secondary-500">Si la dejás vacía, se usa hoy.</span>
               </label>
             </div>
             {pesoError && <p className="m-0 text-[13px] text-error-600">{pesoError}</p>}

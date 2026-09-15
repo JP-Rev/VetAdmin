@@ -8,7 +8,7 @@ import { FormField } from '../components/common/FormField';
 import { PawPrint, Users, ChevronDown, ChevronRight, FileText, MapPin, Phone, Mail } from 'lucide-react';
 import { ESPECIES } from '../constants';
 import { SpeciesIcon } from '../lib/speciesIcon';
-import { getPetAge } from '../lib/petAge';
+import { PetVitals } from '../components/common/PetVitals';
 import {
   FilterCard, DataCard, TableWrap, Th, Td, Tr, RowActions, IconAction, EditIcon, DeleteIcon, EmptyState,
 } from '../components/common/ListLayout';
@@ -426,7 +426,6 @@ export const ClientsPage: React.FC = () => {
                               {clientPets.map(pet => {
                                 const breed = breeds.find(b => b.id_raza === pet.raza_id);
                                 const historyCount = getMedicalHistoryByPetId(pet.id_mascota).length;
-                                const edad = getPetAge(pet.fecha_nacimiento);
                                 const peso = getPesoActual(pet.id_mascota);
                                 return (
                                   <li key={pet.id_mascota}>
@@ -443,15 +442,16 @@ export const ClientsPage: React.FC = () => {
                                       <span className="w-8 h-8 rounded-lg bg-secondary-100 text-secondary-600 flex items-center justify-center flex-shrink-0">
                                         <SpeciesIcon especie={pet.especie} size={16} />
                                       </span>
-                                      <span className="flex-1 min-w-0 flex flex-col">
-                                        <span className="text-[13px] font-semibold text-secondary-900 truncate">{pet.nombre}</span>
-                                        {/* Sin `truncate`: dentro de una tabla el nowrap fija un ancho
-                                            mínimo enorme y saca la fila de la pantalla del celular. */}
-                                        <span className="text-[11.5px] text-secondary-500">
-                                          {pet.especie} · {breed?.nombre || 'Raza desconocida'} · {pet.sexo}
-                                          {edad && ` · ${edad.label}`}
-                                          {peso && ` · ${peso.peso.toLocaleString('es-AR')} kg`}
+                                      <span className="flex-1 min-w-0 flex flex-col gap-1">
+                                        <span className="min-w-0">
+                                          <span className="block text-[13px] font-semibold text-secondary-900 truncate">{pet.nombre}</span>
+                                          {/* Sin `truncate`: dentro de una tabla el nowrap fija un ancho
+                                              mínimo enorme y saca la fila de la pantalla del celular. */}
+                                          <span className="block text-[11.5px] text-secondary-500">
+                                            {pet.especie} · {breed?.nombre || 'Raza desconocida'} · {pet.sexo}
+                                          </span>
                                         </span>
+                                        <PetVitals fechaNacimiento={pet.fecha_nacimiento} peso={peso?.peso ?? null} />
                                       </span>
                                       {historyCount > 0 && (
                                         <span

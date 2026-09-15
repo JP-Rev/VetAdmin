@@ -8,8 +8,9 @@ import {
 } from 'lucide-react';
 import { SpeciesIcon } from '../lib/speciesIcon';
 import { useAuth } from '../contexts/AuthContext';
+import { aISO, hoyISO } from '../lib/fecha';
 
-const todayISO = () => new Date().toISOString().split('T')[0];
+const todayISO = () => hoyISO();
 
 /** Venta.fecha es un timestamp ISO completo (a diferencia de turnos/gastos, que son YYYY-MM-DD). */
 const ventaDay = (fecha: string) => fecha.split('T')[0];
@@ -23,7 +24,7 @@ const lastNDays = (days: number): string[] => {
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
-    out.push(d.toISOString().split('T')[0]);
+    out.push(aISO(d));
   }
   return out;
 };
