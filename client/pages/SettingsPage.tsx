@@ -123,6 +123,21 @@ const ClinicSettingsForm: React.FC = () => {
         <FormField label="Teléfono" name="telefono" value={form.telefono} onChange={handleChange} />
         <FormField label="Email" name="email" type="email" value={form.email} onChange={handleChange} />
 
+        <div>
+          <FormField
+            label="WhatsApp de contacto"
+            name="whatsappContacto"
+            value={form.whatsappContacto}
+            onChange={handleChange}
+            placeholder="2346690893"
+          />
+          <p className="text-xs text-secondary-500 mt-1">
+            Número al que se invita a escribir en el recordatorio de turno. El recordatorio sale
+            desde la línea automática, que no recibe respuestas. Si lo dejás vacío, el mensaje se
+            manda igual pero sin el enlace de contacto.
+          </p>
+        </div>
+
         {error && <p className="text-sm text-error-600">{error}</p>}
 
         <div className="flex items-center gap-3 pt-2">

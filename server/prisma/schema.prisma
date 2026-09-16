@@ -38,6 +38,13 @@ model Clinica {
   direccion   String?
   telefono    String?
   email       String?
+
+  // Número al que se invita a escribir en el recordatorio de turno. El WhatsApp
+  // sale desde la sesión de Evolution, que es sólo para envíos automáticos y no
+  // se lee: este es el número humano al que se deriva. Sin cargarlo, el mensaje
+  // sale igual pero sin el enlace de contacto.
+  whatsappContacto String?
+
   actualizado DateTime @updatedAt
 }
 
@@ -156,9 +163,16 @@ model Turno {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Cuándo se mandó el recordatorio por WhatsApp. Es lo que hace que no se
-  // mande dos veces: el planificador saltea todo turno que ya lo tenga.
-  recordatorioEnviadoAt DateTime?
+  // Cuándo se mandó cada recordatorio por WhatsApp. Son dos avisos: uno el día
+  // anterior y otro una hora antes. Cada uno tiene su marca propia, y es lo que
+  // evita el doble envío: el planificador saltea el aviso que ya esté marcado.
+  //
+  // `recordatorioEnviadoAt` es el aviso de la hora previa. Conserva el nombre
+  // viejo a propósito: cuando sólo había un recordatorio era éste, y renombrarlo
+  // haría que `prisma db push` borre la columna y con ella las marcas, dejando
+  // turnos ya avisados en condiciones de recibir el mensaje otra vez.
+  recordatorioEnviadoAt          DateTime?
+  recordatorioDiaAnteriorEnviadoAt DateTime?
 
   cliente Cliente? @relation(fields: [clienteId], references: [id], onDelete: Cascade)
   mascota Mascota? @relation(fields: [mascotaId], references: [id], onDelete: Cascade)

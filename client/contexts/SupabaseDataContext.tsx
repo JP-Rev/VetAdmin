@@ -177,7 +177,7 @@ export const SupabaseDataProvider: React.FC<{ children: ReactNode }> = ({ childr
   };
   const [expenses, setExpenses] = useState<Gasto[]>([]);
   const [productCategories, setProductCategories] = useState<CategoriaProducto[]>([]);
-  const [clinica, setClinica] = useState<Clinica>({ nombre: 'Mi Veterinaria', direccion: '', telefono: '', email: '' });
+  const [clinica, setClinica] = useState<Clinica>({ nombre: 'Mi Veterinaria', direccion: '', telefono: '', email: '', whatsappContacto: '' });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [printableContentForPortal, setPrintableContentForPortal] = useState<ReactNode | null>(null);

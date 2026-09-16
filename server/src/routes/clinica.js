@@ -12,6 +12,7 @@ const clinicaSchema = z.object({
   direccion: z.string().trim().max(200).nullish(),
   telefono: z.string().trim().max(50).nullish(),
   email: z.string().trim().email('Email inválido').max(120).nullish().or(z.literal('')),
+  whatsappContacto: z.string().trim().max(50).nullish(),
 })
 
 router.get(
@@ -33,6 +34,7 @@ router.put(
       direccion: data.direccion || null,
       telefono: data.telefono || null,
       email: data.email || null,
+      whatsappContacto: data.whatsappContacto || null,
     }
 
     const clinica = await prisma.clinica.upsert({

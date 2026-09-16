@@ -284,4 +284,6 @@ export interface Clinica {
   direccion: string;
   telefono: string;
   email: string;
+  /** Número al que deriva el recordatorio de turno por WhatsApp. */
+  whatsappContacto: string;
 }

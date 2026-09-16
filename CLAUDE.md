@@ -92,12 +92,27 @@ al sidebar como submenú desplegable.
 
 ## Recordatorios de turno por WhatsApp
 
-Una hora antes de cada turno sale un WhatsApp. El envío lo hace **Evolution
-API**, un servicio compartido del VPS que mantiene la sesión de WhatsApp: cómo
-levantarlo, crear la instancia y vincular el número está en
-`vps/evolution.md` del repo `infra-notes-vps-hostinger` — **no en este repo**,
-porque lo usan también las otras apps. Acá vive sólo el que envía
+De cada turno salen **dos** WhatsApp: uno el día anterior y otro una hora antes.
+El envío lo hace **Evolution API**, un servicio compartido del VPS que mantiene
+la sesión de WhatsApp: cómo levantarlo, crear la instancia y vincular el número
+está en `vps/evolution.md` del repo `infra-notes-vps-hostinger` — **no en este
+repo**, porque lo usan también las otras apps. Acá vive sólo el que envía
 (`server/src/whatsapp.js` y `server/src/recordatorios.js`).
+
+**Las dos ventanas son bandas disjuntas**, no acumulativas: el aviso del día
+anterior cubre de 1440 a 60 minutos antes, y el de la hora previa de 60 a 0.
+Por eso nunca hay dos avisos vencidos al mismo tiempo, y un turno que se carga
+media hora antes recibe un solo mensaje en vez de los dos juntos. Cada banda
+tiene su columna propia (`recordatorioDiaAnteriorEnviadoAt` y
+`recordatorioEnviadoAt`); el segundo conserva el nombre viejo a propósito,
+porque renombrarlo haría que `prisma db push` borre la columna y con ella las
+marcas de lo ya avisado.
+
+**El número al que se deriva al cliente se configura** en Configuración → Datos
+de la veterinaria (`Clinica.whatsappContacto`). La línea desde la que sale el
+mensaje es la de la sesión de Evolution y no recibe respuestas, así que el
+mensaje invita a escribir a ese otro número. Si está vacío, el mensaje sale
+igual pero sin el enlace.
 
 Lo que hay que saber para no romperlo:
 
@@ -112,10 +127,12 @@ Lo que hay que saber para no romperlo:
   `TZ=America/Argentina/Buenos_Aires`; en UTC los avisos salen 3 horas
   corridos. `iniciarRecordatorios()` loguea el huso al arrancar y avisa si
   quedó en UTC.
-- **`Turno.recordatorioEnviadoAt` es lo que evita el doble envío.** Se marca al
-  enviar, y también cuando el teléfono no se puede normalizar (no hay nada que
-  reintentar). Si falla Evolution **no** se marca, así la pasada siguiente
-  reintenta.
+- **Las marcas de envío son lo que evita el doble aviso.** Se marca la columna
+  del aviso que se mandó, y también cuando el teléfono no se puede normalizar
+  (no hay nada que reintentar). Si falla Evolution **no** se marca, así la
+  pasada siguiente reintenta.
+- **El texto usa el formato de WhatsApp, no Markdown**: `*negrita*`, `_cursiva_`
+  y las dos anidadas (`*_texto_*`). Va sólo el nombre de pila.
 - Sin `EVOLUTION_URL`, `EVOLUTION_API_KEY` y `EVOLUTION_INSTANCE` el módulo
   queda inerte y la app arranca igual.
 
