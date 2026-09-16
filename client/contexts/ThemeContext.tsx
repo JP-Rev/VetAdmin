@@ -15,10 +15,15 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 const isTheme = (value: string | null): value is Theme =>
   value === 'light' || value === 'dark' || value === 'neon';
 
+/**
+ * Claro por defecto. Antes seguía la preferencia del sistema operativo, así
+ * que en un teléfono configurado en oscuro la app abría oscura sin que nadie
+ * lo hubiera elegido. El tema es una decisión de la app, no del teléfono: el
+ * que el usuario elige queda guardado y se respeta.
+ */
 const getInitialTheme = (): Theme => {
   const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
-  if (isTheme(stored)) return stored;
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  return isTheme(stored) ? stored : 'light';
 };
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

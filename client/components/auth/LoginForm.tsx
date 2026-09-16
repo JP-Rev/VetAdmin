@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { useAuth, rutaInicial } from '../../contexts/AuthContext';
 import { Button } from '../common/Button';
 import { FormField } from '../common/FormField';
 import { apiPost, ApiError } from '../../lib/api';
@@ -26,6 +27,7 @@ type Vista = 'login' | 'olvide' | 'reset';
 
 export const LoginForm: React.FC = () => {
   const { signIn, signOut, user } = useAuth();
+  const navigate = useNavigate();
 
   const [tokenReset, setTokenReset] = useState(leerTokenDeReset);
   const [vista, setVista] = useState<Vista>(() => (leerTokenDeReset() ? 'reset' : 'login'));
@@ -53,8 +55,15 @@ export const LoginForm: React.FC = () => {
     e.preventDefault();
     setCargando(true);
     setError(null);
-    const { error } = await signIn(email, password);
-    if (error) setError(error.message);
+    const { error, user: reciente } = await signIn(email, password);
+    if (error) {
+      setError(error.message);
+    } else if (reciente) {
+      // Siempre al dashboard (o a la primera pantalla que tenga, si no tiene
+      // General). Sin esto se entra a la ruta que hubiera quedado en la URL de
+      // la sesión anterior, que rara vez es a donde uno quiere volver.
+      navigate(rutaInicial(reciente.permisos), { replace: true });
+    }
     setCargando(false);
   };
 

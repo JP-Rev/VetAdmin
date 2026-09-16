@@ -11,6 +11,19 @@ export const PERMISOS: { id: Permiso; label: string; detalle: string }[] = [
   { id: 'clinica', label: 'Datos de la veterinaria', detalle: 'Nombre, dirección y contacto de la clínica' },
 ];
 
+/**
+ * Pantalla a la que entra alguien recién logueado, y a la que se lo manda si
+ * pide una ruta que no le corresponde. El dashboard es el destino normal; las
+ * alternativas son para quien no tiene el módulo General.
+ */
+export const rutaInicial = (permisos: Permiso[]): string => {
+  if (permisos.includes('general')) return '/';
+  if (permisos.includes('comercial')) return '/ventas';
+  if (permisos.includes('usuarios')) return '/settings/usuarios';
+  if (permisos.includes('clinica')) return '/settings/clinica';
+  return '/settings/razas';
+};
+
 interface AuthUser {
   id: string;
   email: string;
@@ -25,7 +38,10 @@ interface AuthContextType {
   /** true si el usuario tiene ese módulo. Los catálogos no piden permiso. */
   puede: (permiso: Permiso) => boolean;
   esAdmin: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  /** Devuelve el usuario además del error: quien llama necesita sus permisos
+   *  para saber a qué pantalla mandarlo, y el estado del contexto todavía no
+   *  se actualizó cuando la promesa resuelve. */
+  signIn: (email: string, password: string) => Promise<{ error: any; user?: AuthUser }>;
   signOut: () => Promise<void>;
 }
 
@@ -46,7 +62,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { user } = await apiPost<{ user: AuthUser }>('/auth/login', { email, password });
       setUser(user);
-      return { error: null };
+      return { error: null, user };
     } catch (err) {
       return { error: err instanceof ApiError ? err : new Error('No se pudo iniciar sesión') };
     }

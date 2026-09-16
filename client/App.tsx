@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { AuthProvider, useAuth, Permiso } from './contexts/AuthContext';
+import { AuthProvider, useAuth, Permiso, rutaInicial } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { SupabaseDataProvider, useSupabaseData } from './contexts/SupabaseDataContext';
@@ -60,12 +60,8 @@ const ErrorScreen: React.FC<{ error: string; onRetry: () => void }> = ({ error, 
  * el dashboard.
  */
 const useInicio = (): string => {
-  const { puede } = useAuth();
-  if (puede('general')) return '/';
-  if (puede('comercial')) return '/ventas';
-  if (puede('usuarios')) return '/settings/usuarios';
-  if (puede('clinica')) return '/settings/clinica';
-  return '/settings/razas';
+  const { user } = useAuth();
+  return rutaInicial(user?.permisos ?? []);
 };
 
 const Inicio: React.FC = () => <Navigate to={useInicio()} replace />;
