@@ -49,8 +49,22 @@ No tiene nada de especial el 32; es largo suficiente para que no se adivine.
 Va como stack propio en `/srv/docker/evolution`, igual que el relay de mail —
 así lo pueden compartir Kinetic y Facturación más adelante.
 
+**Primero la red compartida.** Es un paso aparte y se hace una sola vez en el
+VPS; no la crea ningún compose porque la comparten las tres apps:
+
 ```bash
-docker network create evolution_net     # una sola vez, la comparten las apps
+docker network create evolution_net
+```
+
+Si te la salteás, `docker compose up` baja las imágenes y recién ahí falla con:
+
+```
+network evolution_net declared as external, but could not be found
+```
+
+No se rompió nada: creá la red y volvé a correr `docker compose up -d`.
+
+```bash
 mkdir -p /srv/docker/evolution && cd /srv/docker/evolution
 ```
 
@@ -166,10 +180,20 @@ docker compose logs -f evolution      # que levante sin errores de base
 
 ## 3. Vincular el número 2346566306
 
-```bash
-API=http://127.0.0.1:8080
-KEY=<tu AUTHENTICATION_API_KEY>
+Es la misma clave que generaste en el paso 1 y pegaste en el `.env` del paso 2
+(`AUTHENTICATION_API_KEY`). No es un valor nuevo. Para no copiarla a mano,
+leela del archivo:
 
+```bash
+cd /srv/docker/evolution
+API=http://127.0.0.1:8080
+KEY=$(grep '^AUTHENTICATION_API_KEY=' .env | cut -d= -f2-)
+echo $KEY      # confirmá que imprime el hexadecimal y no algo vacío
+```
+
+Ahí sí, con `$KEY` cargada en esa terminal:
+
+```bash
 # crear la instancia
 curl -X POST $API/instance/create \
   -H "apikey: $KEY" -H 'Content-Type: application/json' \
