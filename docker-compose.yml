@@ -39,7 +39,7 @@ services:
       # Red compartida con Evolution API (/srv/docker/evolution), que mantiene
       # la sesión de WhatsApp desde la que salen los recordatorios de turno.
       # Mismo criterio que mail_net: servicio aparte, no embebido acá.
-      # Ver docs/recordatorios-whatsapp.md.
+      # Ver vps/evolution.md en el repo infra-notes-vps-hostinger.
       - evolution_net
 
   client:

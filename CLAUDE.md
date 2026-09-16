@@ -92,14 +92,20 @@ al sidebar como submenú desplegable.
 
 ## Recordatorios de turno por WhatsApp
 
-Una hora antes de cada turno sale un WhatsApp por **Evolution API**, un
-servicio aparte en el VPS que mantiene la sesión de WhatsApp. El paso a paso
-para montarlo y vincular el número está en
-[docs/recordatorios-whatsapp.md](docs/recordatorios-whatsapp.md). Acá, lo que
-hay que saber para no romperlo:
+Una hora antes de cada turno sale un WhatsApp. El envío lo hace **Evolution
+API**, un servicio compartido del VPS que mantiene la sesión de WhatsApp: cómo
+levantarlo, crear la instancia y vincular el número está en
+`vps/evolution.md` del repo `infra-notes-vps-hostinger` — **no en este repo**,
+porque lo usan también las otras apps. Acá vive sólo el que envía
+(`server/src/whatsapp.js` y `server/src/recordatorios.js`).
+
+Lo que hay que saber para no romperlo:
 
 - **El número remitente es el de la sesión de Evolution**, no algo que mande la
   app en cada pedido. Para cambiarlo hay que revincular otro WhatsApp.
+- El servicio `server` tiene que estar en la red Docker `evolution_net` (ya está
+  en `docker-compose.yml`, como `external: true`). Si no existe en el VPS:
+  `docker network create evolution_net`.
 - 🔴 **Depende del huso del contenedor.** `Turno.fecha` guarda la fecha como
   medianoche UTC y `Turno.hora` es texto: el instante real se arma combinándolos
   con el huso del proceso. `docker-compose.yml` fija
