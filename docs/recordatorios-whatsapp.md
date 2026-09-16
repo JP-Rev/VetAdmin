@@ -156,7 +156,9 @@ CACHE_REDIS_URI=redis://evolution_redis:6379/6
 CACHE_REDIS_PREFIX_KEY=evolution
 CACHE_LOCAL_ENABLED=false
 
-# --- cómo aparece en "Dispositivos vinculados" del teléfono
+# --- cómo aparece en "Dispositivos vinculados" del teléfono.
+# Es sólo una etiqueta: no tiene NADA que ver con el nombre de la instancia
+# (ese es "vetadmin" y va en la URL de todos los endpoints). Cambiala libremente.
 CONFIG_SESSION_PHONE_CLIENT=VetAdmin
 CONFIG_SESSION_PHONE_NAME=Chrome
 
