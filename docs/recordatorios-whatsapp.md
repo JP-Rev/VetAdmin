@@ -1,12 +1,13 @@
 # Recordatorios de turno por WhatsApp
 
 La app manda un WhatsApp una hora antes de cada turno. El envío lo hace
-**Evolution API**, un servicio aparte que mantiene abierta una sesión de
-WhatsApp; VetAdmin sólo le pega por HTTP.
+**Evolution API** ([evolution-foundation/evolution-api](https://github.com/evolution-foundation/evolution-api)),
+un servicio aparte que mantiene abierta una sesión de WhatsApp; VetAdmin sólo le
+pega por HTTP.
 
 > **El número desde el que sale el mensaje es el de la sesión de Evolution.**
-> No se manda en cada pedido: es el número que se vincula escaneando el QR. Para
-> que salga desde **2346566306**, ese tiene que ser el WhatsApp escaneado.
+> No se manda en cada pedido: es el WhatsApp que se vincula escaneando el QR.
+> Para que salga desde **2346566306**, ese es el teléfono que hay que escanear.
 
 El código ya está en la app y queda **inerte** hasta que existan las tres
 variables de entorno. Sin ellas arranca igual y lo dice en el log:
@@ -15,7 +16,35 @@ variables de entorno. Sin ellas arranca igual y lo dice en el log:
 Recordatorios por WhatsApp: apagados (falta configurar EVOLUTION_URL, ...)
 ```
 
-## 1. Levantar Evolution en el VPS
+---
+
+## 1. Generar las claves
+
+🔴 **Generalas primero y pegá el resultado.** En un archivo `.env` de Docker
+Compose `$(openssl rand -hex 32)` **no se ejecuta**: Compose lo guarda tal cual,
+como el texto literal `$(openssl rand -hex 32)`, y esa terminaría siendo tu
+apikey. El `.env` no es un script de shell.
+
+Corré esto en la terminal del VPS:
+
+```bash
+openssl rand -hex 32      # para AUTHENTICATION_API_KEY
+openssl rand -hex 24      # para la password de Postgres
+```
+
+Cada uno imprime una línea de hexadecimal, así:
+
+```
+9f2c41a7e83b5d06c14fa927de5b3081f6a4c92e7b18d05a3fc6e921b47d8a3e
+```
+
+Copiá **esa salida** y pegala en el `.env` del paso siguiente. Guardá la apikey
+en algún lado: la vas a necesitar de nuevo para configurar VetAdmin.
+
+`-hex 32` son 32 bytes al azar mostrados en hexadecimal, o sea 64 caracteres.
+No tiene nada de especial el 32; es largo suficiente para que no se adivine.
+
+## 2. Levantar Evolution en el VPS
 
 Va como stack propio en `/srv/docker/evolution`, igual que el relay de mail —
 así lo pueden compartir Kinetic y Facturación más adelante.
@@ -25,21 +54,17 @@ docker network create evolution_net     # una sola vez, la comparten las apps
 mkdir -p /srv/docker/evolution && cd /srv/docker/evolution
 ```
 
-`docker-compose.yml` de arranque:
+`docker-compose.yml`:
 
 ```yaml
 services:
   evolution:
-    image: atendai/evolution-api:v2.1.1     # fijá una versión, no uses latest
+    # Es la imagen oficial del repo. Fijá un tag en vez de latest cuando
+    # confirmes qué versión te funciona, así un pull no te cambia la API.
+    image: evoapicloud/evolution-api:latest
     container_name: evolution
     restart: unless-stopped
-    environment:
-      AUTHENTICATION_API_KEY: ${EVOLUTION_API_KEY}
-      DATABASE_ENABLED: "true"
-      DATABASE_PROVIDER: postgresql
-      DATABASE_CONNECTION_URI: postgresql://evolution:${POSTGRES_PASSWORD}@evolution_db:5432/evolution
-      CACHE_REDIS_ENABLED: "false"
-      TZ: America/Argentina/Buenos_Aires
+    env_file: .env
     volumes:
       - evolution_instances:/evolution/instances
     ports:
@@ -47,10 +72,11 @@ services:
       - "127.0.0.1:8080:8080"
     depends_on:
       - evolution_db
+      - evolution_redis
     networks: [evolution_net]
 
   evolution_db:
-    image: postgres:16-alpine
+    image: postgres:15
     container_name: evolution_db
     restart: unless-stopped
     environment:
@@ -61,64 +87,131 @@ services:
       - evolution_pg:/var/lib/postgresql/data
     networks: [evolution_net]
 
+  evolution_redis:
+    image: redis:latest
+    container_name: evolution_redis
+    restart: unless-stopped
+    command: redis-server --port 6379 --appendonly yes
+    volumes:
+      - evolution_redis:/data
+    networks: [evolution_net]
+
 volumes:
   evolution_instances:
   evolution_pg:
+  evolution_redis:
 
 networks:
   evolution_net:
     external: true
 ```
 
-Y un `.env` al lado (no va a git):
+Y el `.env` al lado (**no va a git**). El
+[`.env.example` del repo](https://github.com/evolution-foundation/evolution-api/blob/main/.env.example)
+tiene cientos de variables — casi todas son integraciones apagadas (Kafka,
+RabbitMQ, SQS, Chatwoot, Typebot, OpenAI, S3…) que no hacen falta. Estas son
+las que importan para este caso:
 
 ```bash
-EVOLUTION_API_KEY=$(openssl rand -hex 32)
-POSTGRES_PASSWORD=$(openssl rand -hex 24)
+# --- servidor
+SERVER_TYPE=http
+SERVER_PORT=8080
+SERVER_URL=http://127.0.0.1:8080
+
+# --- autenticación (pegá acá la salida de openssl rand -hex 32)
+AUTHENTICATION_API_KEY=9f2c41a7e83b5d06c14fa927de5b3081f6a4c92e7b18d05a3fc6e921b47d8a3e
+
+# --- base (la password va también en POSTGRES_PASSWORD, abajo)
+DATABASE_PROVIDER=postgresql
+DATABASE_CONNECTION_URI=postgresql://evolution:PEGAR_PASSWORD_ACA@evolution_db:5432/evolution?schema=evolution_api
+DATABASE_CONNECTION_CLIENT_NAME=evolution
+
+# Sólo mandamos recordatorios: no hace falta guardar el historial de chats,
+# contactos ni mensajes. Con todo esto en true la base crece sin sentido.
+DATABASE_SAVE_DATA_INSTANCE=true
+DATABASE_SAVE_DATA_NEW_MESSAGE=false
+DATABASE_SAVE_MESSAGE_UPDATE=false
+DATABASE_SAVE_DATA_CONTACTS=false
+DATABASE_SAVE_DATA_CHATS=false
+DATABASE_SAVE_DATA_LABELS=false
+DATABASE_SAVE_DATA_HISTORIC=false
+
+# --- caché (viene en true por defecto: si no levantás Redis, hay que apagarlo)
+CACHE_REDIS_ENABLED=true
+CACHE_REDIS_URI=redis://evolution_redis:6379/6
+CACHE_REDIS_PREFIX_KEY=evolution
+CACHE_LOCAL_ENABLED=false
+
+# --- cómo aparece en "Dispositivos vinculados" del teléfono
+CONFIG_SESSION_PHONE_CLIENT=VetAdmin
+CONFIG_SESSION_PHONE_NAME=Chrome
+
+# --- varios
+TELEMETRY_ENABLED=false
+LOG_LEVEL=ERROR,WARN,INFO
+LANGUAGE=en
+TZ=America/Argentina/Buenos_Aires
+
+# --- para el servicio de Postgres del compose (pegá la de openssl rand -hex 24)
+POSTGRES_PASSWORD=PEGAR_PASSWORD_ACA
 ```
 
-⚠️ **Verificá los nombres de las variables contra la documentación de la
-versión que bajes.** Evolution las cambió entre v1 y v2 y este compose es un
-punto de partida, no una configuración verificada contra tu servidor.
+⚠️ La password de Postgres va en **dos lugares**: dentro de
+`DATABASE_CONNECTION_URI` y en `POSTGRES_PASSWORD`. Tienen que coincidir.
 
 ```bash
 docker compose up -d
 docker compose logs -f evolution      # que levante sin errores de base
 ```
 
-## 2. Vincular el número 2346566306
+## 3. Vincular el número 2346566306
 
 ```bash
+API=http://127.0.0.1:8080
+KEY=<tu AUTHENTICATION_API_KEY>
+
 # crear la instancia
-curl -X POST http://127.0.0.1:8080/instance/create \
-  -H "apikey: $EVOLUTION_API_KEY" -H 'Content-Type: application/json' \
+curl -X POST $API/instance/create \
+  -H "apikey: $KEY" -H 'Content-Type: application/json' \
   -d '{"instanceName":"vetadmin","integration":"WHATSAPP-BAILEYS","qrcode":true}'
 
-# pedir el QR (devuelve un base64 para abrir en el navegador)
-curl -s http://127.0.0.1:8080/instance/connect/vetadmin -H "apikey: $EVOLUTION_API_KEY"
+# pedir el QR (devuelve un base64 largo dentro del JSON)
+curl -s $API/instance/connect/vetadmin -H "apikey: $KEY"
 ```
 
-Escaneá ese QR desde **WhatsApp del 2346566306** → Dispositivos vinculados.
-Confirmá que quedó conectado:
+El QR viene como data URL en base64. Para verlo, guardalo y abrilo:
 
 ```bash
-curl -s http://127.0.0.1:8080/instance/connectionState/vetadmin -H "apikey: $EVOLUTION_API_KEY"
+curl -s $API/instance/connect/vetadmin -H "apikey: $KEY" \
+  | python3 -c "import sys,json,base64; d=json.load(sys.stdin); \
+      open('/tmp/qr.png','wb').write(base64.b64decode(d['base64'].split(',')[1]))"
+# después bajá /tmp/qr.png a tu máquina y escanealo
+```
+
+Escaneá desde **WhatsApp del 2346566306** → Dispositivos vinculados. Confirmá:
+
+```bash
+curl -s $API/instance/connectionState/vetadmin -H "apikey: $KEY"
 # tiene que decir "open"
 ```
 
+> Si preferís no pelear con el base64, el proyecto publica también
+> `evoapicloud/evolution-manager`, una UI web que muestra el QR y el estado de
+> las instancias. Se agrega como un servicio más al compose.
+
 🔴 **Esa sesión se cae.** Si desvinculan el dispositivo desde el teléfono, si el
 teléfono queda mucho tiempo sin internet o si WhatsApp corta la sesión, los
-recordatorios dejan de salir en silencio. Conviene mirar el
+recordatorios dejan de salir **en silencio**. Conviene mirar el
 `connectionState` cada tanto, o revisar el log del server buscando
 `No se pudo mandar el recordatorio`.
 
-## 3. Configurar VetAdmin
+## 4. Configurar VetAdmin
 
 En `/srv/docker/vet-admin/server/.env`:
 
 ```bash
 EVOLUTION_URL=http://evolution:8080
-EVOLUTION_API_KEY=<la misma del stack de Evolution>
+EVOLUTION_API_KEY=<la misma AUTHENTICATION_API_KEY>
 EVOLUTION_INSTANCE=vetadmin
 ```
 
@@ -133,6 +226,21 @@ docker compose logs server | grep -i recordatorio
 
 Si el log dice **UTC** en vez del huso argentino, los avisos van a salir tres
 horas corridos: revisá que `TZ` esté llegando al contenedor.
+
+### Probar sin esperar un turno
+
+Cargá un turno para dentro de ~40 minutos con un cliente que tenga tu teléfono,
+y esperá la próxima pasada (máximo 5 minutos). O mandá uno a mano:
+
+```bash
+curl -X POST http://127.0.0.1:8080/message/sendText/vetadmin \
+  -H "apikey: $KEY" -H 'Content-Type: application/json' \
+  -d '{"number":"5492346690893","text":"Prueba desde el VPS"}'
+```
+
+Ese es exactamente el endpoint y el cuerpo que usa `server/src/whatsapp.js`.
+
+---
 
 ## Cómo funciona, en criollo
 
@@ -162,3 +270,4 @@ Ajustables por entorno: `RECORDATORIO_MINUTOS_ANTES` (60) y
   WhatsApp del teléfono, no a la app.
 - **No hay reintento con espera.** Si Evolution está caído, se reintenta a los
   5 minutos hasta que el turno pase.
+- **Nadie avisa si la sesión se cayó.** Ver la advertencia del paso 3.
