@@ -90,6 +90,29 @@ Configuración dejó de ser una pantalla con pestañas: cada sección es una rut
 (`/settings/<slug>`, ver `SECCIONES_CONFIG` en `pages/SettingsPage.tsx`) y entra
 al sidebar como submenú desplegable.
 
+## Recordatorios de turno por WhatsApp
+
+Una hora antes de cada turno sale un WhatsApp por **Evolution API**, un
+servicio aparte en el VPS que mantiene la sesión de WhatsApp. El paso a paso
+para montarlo y vincular el número está en
+[docs/recordatorios-whatsapp.md](docs/recordatorios-whatsapp.md). Acá, lo que
+hay que saber para no romperlo:
+
+- **El número remitente es el de la sesión de Evolution**, no algo que mande la
+  app en cada pedido. Para cambiarlo hay que revincular otro WhatsApp.
+- 🔴 **Depende del huso del contenedor.** `Turno.fecha` guarda la fecha como
+  medianoche UTC y `Turno.hora` es texto: el instante real se arma combinándolos
+  con el huso del proceso. `docker-compose.yml` fija
+  `TZ=America/Argentina/Buenos_Aires`; en UTC los avisos salen 3 horas
+  corridos. `iniciarRecordatorios()` loguea el huso al arrancar y avisa si
+  quedó en UTC.
+- **`Turno.recordatorioEnviadoAt` es lo que evita el doble envío.** Se marca al
+  enviar, y también cuando el teléfono no se puede normalizar (no hay nada que
+  reintentar). Si falla Evolution **no** se marca, así la pasada siguiente
+  reintenta.
+- Sin `EVOLUTION_URL`, `EVOLUTION_API_KEY` y `EVOLUTION_INSTANCE` el módulo
+  queda inerte y la app arranca igual.
+
 ## Incidentes
 
 **04/09 — se perdieron datos en un `db push`.** El deploy de la tabla `Pesaje`

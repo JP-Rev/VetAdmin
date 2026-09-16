@@ -9,6 +9,10 @@ services:
     environment:
       DATABASE_URL: file:/data/vetadmin.db
       STORAGE_ROOT: /srv/storage/vetadmin
+      # 🔴 Sin esto el contenedor corre en UTC y los recordatorios de turno
+      # salen 3 horas corridos: el turno guarda la hora como texto y el
+      # instante real se arma con el huso del proceso.
+      TZ: ${TZ:-America/Argentina/Buenos_Aires}
     volumes:
       # Los archivos subidos van SIEMPRE bajo /srv/storage/ en el VPS: el backup
       # automatico del servidor recorre ese arbol. Lo que quede afuera no se
@@ -32,6 +36,11 @@ services:
       # recuperacion de contraseña por mail no puede salir.
       # Ver infra-notes-vps-hostinger/vps/mail.md.
       - mail_net
+      # Red compartida con Evolution API (/srv/docker/evolution), que mantiene
+      # la sesión de WhatsApp desde la que salen los recordatorios de turno.
+      # Mismo criterio que mail_net: servicio aparte, no embebido acá.
+      # Ver docs/recordatorios-whatsapp.md.
+      - evolution_net
 
   client:
     build:
@@ -56,4 +65,7 @@ networks:
   # Creada a mano una sola vez en el VPS: docker network create mail_net
   # (external: no la administra este compose, la comparten las tres apps).
   mail_net:
+    external: true
+  # Creada a mano una sola vez en el VPS: docker network create evolution_net
+  evolution_net:
     external: true

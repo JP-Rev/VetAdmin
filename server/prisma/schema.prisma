@@ -156,6 +156,10 @@ model Turno {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Cuándo se mandó el recordatorio por WhatsApp. Es lo que hace que no se
+  // mande dos veces: el planificador saltea todo turno que ya lo tenga.
+  recordatorioEnviadoAt DateTime?
+
   cliente Cliente? @relation(fields: [clienteId], references: [id], onDelete: Cascade)
   mascota Mascota? @relation(fields: [mascotaId], references: [id], onDelete: Cascade)
 
