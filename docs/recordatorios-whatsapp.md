@@ -82,8 +82,11 @@ services:
     volumes:
       - evolution_instances:/evolution/instances
     ports:
-      # Sólo local: se entra por el proxy del host, nunca por la IP pública.
-      - "127.0.0.1:8080:8080"
+      # Sólo local, y en 8081 a propósito: el 8080 del VPS ya lo usa File
+      # Browser. Este puerto se publica nada más que para el alta de la
+      # instancia y el QR; VetAdmin le habla por la red interna de Docker
+      # (http://evolution:8080), no por acá.
+      - "127.0.0.1:8081:8080"
     depends_on:
       - evolution_db
       - evolution_redis
@@ -128,9 +131,11 @@ las que importan para este caso:
 
 ```bash
 # --- servidor
+# SERVER_PORT es el puerto DENTRO del contenedor: se deja en 8080 aunque
+# afuera lo publiques en otro. El mapeo lo hace el compose.
 SERVER_TYPE=http
 SERVER_PORT=8080
-SERVER_URL=http://127.0.0.1:8080
+SERVER_URL=http://127.0.0.1:8081
 
 # --- autenticación (pegá acá la salida de openssl rand -hex 32)
 AUTHENTICATION_API_KEY=9f2c41a7e83b5d06c14fa927de5b3081f6a4c92e7b18d05a3fc6e921b47d8a3e
@@ -188,9 +193,28 @@ leela del archivo:
 
 ```bash
 cd /srv/docker/evolution
-API=http://127.0.0.1:8080
+API=http://127.0.0.1:8081
 KEY=$(grep '^AUTHENTICATION_API_KEY=' .env | cut -d= -f2-)
 echo $KEY      # confirmá que imprime el hexadecimal y no algo vacío
+```
+
+⚠️ **No escribas `KEY=<tu clave>` con los signos `<>`**: bash los toma como
+redirección y tira `syntax error near unexpected token`, dejando `$KEY` vacío.
+
+**Antes de seguir, confirmá que del otro lado está Evolution y no otra cosa:**
+
+```bash
+curl -s $API | head -5
+```
+
+Tiene que devolver un JSON de Evolution. Si te devuelve HTML, ese puerto lo
+tiene otro servicio del VPS — a nosotros nos pasó con File Browser en el 8080.
+Mirá quién lo ocupa y elegí otro puerto en el compose:
+
+```bash
+docker compose ps                    # ¿está corriendo evolution?
+docker compose logs evolution        # ¿se quejó al arrancar?
+ss -tlnp | grep -E '8080|8081'       # quién tiene cada puerto
 ```
 
 Ahí sí, con `$KEY` cargada en esa terminal:
@@ -259,7 +283,7 @@ Cargá un turno para dentro de ~40 minutos con un cliente que tenga tu teléfono
 y esperá la próxima pasada (máximo 5 minutos). O mandá uno a mano:
 
 ```bash
-curl -X POST http://127.0.0.1:8080/message/sendText/vetadmin \
+curl -X POST $API/message/sendText/vetadmin \
   -H "apikey: $KEY" -H 'Content-Type: application/json' \
   -d '{"number":"5492346690893","text":"Prueba desde el VPS"}'
 ```
