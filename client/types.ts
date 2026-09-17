@@ -286,4 +286,8 @@ export interface Clinica {
   email: string;
   /** Número al que deriva el recordatorio de turno por WhatsApp. */
   whatsappContacto: string;
+  /** Agenda: cada cuántos minutos se sugiere un horario, y entre qué horas. */
+  turnoIntervaloMin: number;
+  turnoHoraInicio: string;
+  turnoHoraFin: string;
 }

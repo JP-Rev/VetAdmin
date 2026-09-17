@@ -172,6 +172,9 @@ export const toClinica = (c) => ({
   telefono: c.telefono ?? '',
   email: c.email ?? '',
   whatsappContacto: c.whatsappContacto ?? '',
+  turnoIntervaloMin: c.turnoIntervaloMin ?? 15,
+  turnoHoraInicio: c.turnoHoraInicio ?? '07:00',
+  turnoHoraFin: c.turnoHoraFin ?? '21:00',
 })
 
 // La fila singleton se crea al primer acceso, para que la app nunca vea null.

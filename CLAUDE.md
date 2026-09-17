@@ -169,6 +169,29 @@ problema invisible para siempre. También avisa cuando se recupera.
   avisar si sigue caída, que es lo que conviene.
 - Que falle el mail nunca tumba la pasada de recordatorios.
 
+## Campo de hora de los turnos
+
+🔴 **No usar `<input type="time">`.** Su desplegable es el del navegador y queda
+abierto después de elegir los minutos: no hay forma de cerrarlo desde la página
+(existe `showPicker()`, no hay `hidePicker()`). Por eso el campo es
+`components/common/TimePicker.tsx`, un combobox propio.
+
+- **Se escribe a mano o se elige de la lista**, que sí cierra al elegir.
+  `normalizarHora` (en `lib/hora.ts`) interpreta `9`, `930`, `9.30` y `9:30`
+  como las nueve y media. Lo que no se puede leer como hora **no se recorta a
+  algo cercano**: se vuelve al último valor válido, porque guardar un turno a
+  una hora que nadie eligió es peor que rechazar el tipeo.
+- **Las opciones cancelan el `mousedown`** (`preventDefault`). Si no, el `blur`
+  del input se dispara antes que el `click` y la lista se cierra sin haber
+  elegido nada. Lo mismo el botón del chevron.
+- **`onBlur` normaliza**, que es lo que cubre salir con Tab. Sin eso, tabular
+  dejaba lo tipeado en crudo en el formulario.
+- **La franja y el intervalo salen de Configuración → Datos de la veterinaria**
+  (`Clinica.turnoHoraInicio`, `turnoHoraFin`, `turnoIntervaloMin`). Son sólo
+  sugerencias: el horario se puede escribir libremente y caer fuera de la franja.
+- 🔴 **No agregar validación de superposición de turnos.** La disponibilidad la
+  maneja el profesional; la app permite solapar a propósito.
+
 ## Incidentes
 
 **04/09 — se perdieron datos en un `db push`.** El deploy de la tabla `Pesaje`

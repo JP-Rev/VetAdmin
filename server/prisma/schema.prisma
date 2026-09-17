@@ -45,6 +45,14 @@ model Clinica {
   // sale igual pero sin el enlace de contacto.
   whatsappContacto String?
 
+  // Agenda: cómo se sugieren los horarios al dar un turno. Son sugerencias, no
+  // restricciones -- el horario se puede escribir a mano y caer fuera de la
+  // franja, y se permite superponer turnos: la disponibilidad real la maneja el
+  // profesional, no la app.
+  turnoIntervaloMin Int    @default(15)
+  turnoHoraInicio   String @default("07:00")
+  turnoHoraFin      String @default("21:00")
+
   actualizado DateTime @updatedAt
 }
 

@@ -13,6 +13,8 @@ import {
   Card, DataCard, TableWrap, Th, Td, Tr, RowActions, IconAction, EditIcon, DeleteIcon, ViewIcon, EmptyState,
 } from '../components/common/ListLayout';
 import { aISO, hoyISO } from '../lib/fecha';
+import { horariosSugeridos } from '../lib/hora';
+import { TimePicker } from '../components/common/TimePicker';
 
 // Appointment Form Component
 interface AppointmentFormProps {
@@ -24,7 +26,14 @@ interface AppointmentFormProps {
 }
 
 const AppointmentFormComponent: React.FC<AppointmentFormProps> = ({ initialData, onSave, onClose, preselectedClientId, preselectedPetId }) => {
-  const { clients, getPetsByClientId, addAppointment, updateAppointment, getPetById } = useSupabaseData();
+  const { clients, getPetsByClientId, addAppointment, updateAppointment, getPetById, clinica } = useSupabaseData();
+
+  // La franja y el intervalo salen de Configuración → Datos de la veterinaria.
+  // Son sólo sugerencias: el horario se puede escribir a mano igual.
+  const sugerenciasHora = React.useMemo(
+    () => horariosSugeridos(clinica.turnoHoraInicio, clinica.turnoHoraFin, clinica.turnoIntervaloMin),
+    [clinica.turnoHoraInicio, clinica.turnoHoraFin, clinica.turnoIntervaloMin]
+  );
   
   const [formData, setFormData] = useState<TurnoForm>(() => {
     if (initialData) {
@@ -54,7 +63,11 @@ const AppointmentFormComponent: React.FC<AppointmentFormProps> = ({ initialData,
     }
   }, [formData.cliente_id, getPetsByClientId, formData.mascota_id]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  // Toma la forma mínima {name, value} y no un React.ChangeEvent: así sirve
+  // igual para los <input> nativos de FormField y para TimePicker, que sintetiza
+  // el evento al elegir del desplegable. Un ChangeEvent real cumple esta forma,
+  // de modo que sigue siendo válido donde se espera un handler de evento.
+  const handleChange = (e: { target: { name: string; value: string } }) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     if (name === "cliente_id") { 
@@ -121,7 +134,10 @@ const AppointmentFormComponent: React.FC<AppointmentFormProps> = ({ initialData,
       
       <div className="grid grid-cols-2 gap-4">
         <FormField label="Fecha" name="fecha" type="date" value={formData.fecha} onChange={handleChange} error={errors.fecha} required />
-        <FormField label="Hora" name="hora" type="time" value={formData.hora} onChange={handleChange} error={errors.hora} required />
+        <TimePicker
+          label="Hora" name="hora" value={formData.hora} onChange={handleChange}
+          error={errors.hora} required sugerencias={sugerenciasHora}
+        />
       </div>
       <FormField label="Motivo de la Consulta" name="motivo" as="textarea" value={formData.motivo} onChange={handleChange} error={errors.motivo} required rows={3}/>
       <div className="flex justify-end space-x-3 pt-4">

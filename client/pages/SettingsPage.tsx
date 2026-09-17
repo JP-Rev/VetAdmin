@@ -9,6 +9,7 @@ import { FormField } from '../components/common/FormField';
 import { Plus, Edit3, Trash2, PawPrint, Thermometer, Scissors, Tags, Building2, Check, Search, X, Users } from 'lucide-react';
 import { ESPECIES } from '../constants';
 import { UsuariosSettings } from '../components/settings/UsuariosSettings';
+import { horariosSugeridos } from '../lib/hora';
 
 
 /** Encabezado de una pestaña: título, buscador y acción principal. */
@@ -90,6 +91,13 @@ const ClinicSettingsForm: React.FC = () => {
 
   React.useEffect(() => { setForm(clinica); }, [clinica]);
 
+  // Vista previa en vivo: sin esto habría que guardar e irse al alta de turnos
+  // para ver qué lista quedó.
+  const vistaPrevia = React.useMemo(
+    () => horariosSugeridos(form.turnoHoraInicio, form.turnoHoraFin, Number(form.turnoIntervaloMin)),
+    [form.turnoHoraInicio, form.turnoHoraFin, form.turnoIntervaloMin]
+  );
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
     setSaved(false);
@@ -135,6 +143,37 @@ const ClinicSettingsForm: React.FC = () => {
             Número al que se invita a escribir en el recordatorio de turno. El recordatorio sale
             desde la línea automática, que no recibe respuestas. Si lo dejás vacío, el mensaje se
             manda igual pero sin el enlace de contacto.
+          </p>
+        </div>
+
+        <div className="pt-4 mt-2 border-t border-secondary-200">
+          <h3 className="text-base font-semibold text-secondary-700">Agenda de turnos</h3>
+          <p className="text-sm text-secondary-500 mb-4">
+            Definen los horarios que se ofrecen al dar un turno. Son sugerencias: la hora
+            siempre se puede escribir a mano, aunque quede fuera de esta franja, y se pueden
+            superponer turnos — la disponibilidad la maneja el profesional.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4">
+            <FormField
+              label="Desde" name="turnoHoraInicio" type="time"
+              value={form.turnoHoraInicio} onChange={handleChange}
+            />
+            <FormField
+              label="Hasta" name="turnoHoraFin" type="time"
+              value={form.turnoHoraFin} onChange={handleChange}
+            />
+            <FormField
+              label="Cada (minutos)" name="turnoIntervaloMin" type="number"
+              min={5} max={240} step={5}
+              value={form.turnoIntervaloMin} onChange={handleChange}
+            />
+          </div>
+
+          <p className="text-xs text-secondary-500">
+            {vistaPrevia.length > 0
+              ? `${vistaPrevia.length} horarios: ${vistaPrevia.slice(0, 4).join(', ')}${vistaPrevia.length > 4 ? `, …, ${vistaPrevia[vistaPrevia.length - 1]}` : ''}`
+              : 'Revisá la franja y el intervalo: con esos valores no se genera ningún horario.'}
           </p>
         </div>
 
