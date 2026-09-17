@@ -131,6 +131,13 @@ Lo que hay que saber para no romperlo:
   del aviso que se mandó, y también cuando el teléfono no se puede normalizar
   (no hay nada que reintentar). Si falla Evolution **no** se marca, así la
   pasada siguiente reintenta.
+- 🔴 **Reprogramar un turno limpia las marcas** (`seReprogramo` en
+  `routes/turnos.js`), así el cliente recibe el aviso del horario nuevo. Sin
+  eso, quien reprograma no recibía ningún recordatorio: las marcas del horario
+  viejo seguían puestas. Se compara contra lo guardado —para eso turnos pasa
+  `loadCurrent: true` a `crudRouter`— porque el formulario manda `fecha` y
+  `hora` en toda edición, incluso cuando se cambió sólo el motivo: limpiarlas a
+  ciegas mandaría un recordatorio repetido cada vez que alguien edita el turno.
 - **El texto usa el formato de WhatsApp, no Markdown**: `*negrita*`, `_cursiva_`
   y las dos anidadas (`*_texto_*`). Va sólo el nombre de pila.
 - Sin `EVOLUTION_URL`, `EVOLUTION_API_KEY` y `EVOLUTION_INSTANCE` el módulo
