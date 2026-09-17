@@ -131,17 +131,43 @@ Lo que hay que saber para no romperlo:
   del aviso que se mandó, y también cuando el teléfono no se puede normalizar
   (no hay nada que reintentar). Si falla Evolution **no** se marca, así la
   pasada siguiente reintenta.
-- 🔴 **Reprogramar un turno limpia las marcas** (`seReprogramo` en
-  `routes/turnos.js`), así el cliente recibe el aviso del horario nuevo. Sin
-  eso, quien reprograma no recibía ningún recordatorio: las marcas del horario
-  viejo seguían puestas. Se compara contra lo guardado —para eso turnos pasa
-  `loadCurrent: true` a `crudRouter`— porque el formulario manda `fecha` y
-  `hora` en toda edición, incluso cuando se cambió sólo el motivo: limpiarlas a
-  ciegas mandaría un recordatorio repetido cada vez que alguien edita el turno.
+- 🔴 **Reprogramar o reactivar un turno limpia las marcas** (`seReprogramo` y
+  `seReactivo` en `routes/turnos.js`), así el cliente recibe el aviso que
+  corresponde. Sin eso, quien reprograma no recibía ningún recordatorio: las
+  marcas del horario viejo seguían puestas. Se compara contra lo guardado —para
+  eso turnos pasa `loadCurrent: true` a `crudRouter`— porque el formulario manda
+  `fecha`, `hora` y `estado` en toda edición, incluso cuando se cambió sólo el
+  motivo: limpiarlas a ciegas mandaría un recordatorio repetido cada vez que
+  alguien edita el turno. Reactivar es pasar a `Pendiente` desde un estado que
+  **no** era `Pendiente` (un turno cancelado y repuesto necesita avisarse de
+  nuevo, porque al cliente se le había dicho que no viniera).
 - **El texto usa el formato de WhatsApp, no Markdown**: `*negrita*`, `_cursiva_`
   y las dos anidadas (`*_texto_*`). Va sólo el nombre de pila.
 - Sin `EVOLUTION_URL`, `EVOLUTION_API_KEY` y `EVOLUTION_INSTANCE` el módulo
   queda inerte y la app arranca igual.
+
+### La sesión se cae en silencio: por eso hay un vigilante
+
+Si desvinculan el dispositivo, si WhatsApp corta la sesión o si el teléfono pasa
+~14 días sin conectarse (ahí WhatsApp desvincula los dispositivos companion), los
+envíos dejan de salir y **nada lo dice**. Sin vigilancia, la veterinaria se
+entera porque un cliente no vino.
+
+`vigilarSesion()` consulta `connectionState` en cada pasada y **avisa en la
+transición, no en cada pasada**: con un chequeo cada 5 minutos, una sesión caída
+un fin de semana serían casi 600 mails. Si sigue caída insiste cada
+`ALERTA_REPETIR_HORAS` (12 por defecto), para que un aviso perdido no deje el
+problema invisible para siempre. También avisa cuando se recupera.
+
+- **Destinatario**: `ALERTA_WHATSAPP_EMAIL`, y si está vacío el email de
+  Configuración → Datos de la veterinaria. Sin ninguno de los dos, el aviso
+  queda sólo en el log. El mail sale por el mismo relay compartido.
+- **Con la sesión caída no se intenta mandar nada.** Los turnos no pierden el
+  aviso: al no marcarse, salen solos cuando la sesión vuelva — siempre que el
+  turno todavía no haya pasado.
+- El estado previo se guarda **en memoria** a propósito: un reinicio vuelve a
+  avisar si sigue caída, que es lo que conviene.
+- Que falle el mail nunca tumba la pasada de recordatorios.
 
 ## Incidentes
 

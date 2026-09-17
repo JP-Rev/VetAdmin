@@ -53,6 +53,41 @@ export function normalizarTelefono(crudo) {
   return `549${d}`
 }
 
+/**
+ * Estado de la sesión de WhatsApp: 'open' cuando está vinculada y puede mandar.
+ *
+ * Existe porque la sesión se cae en silencio. Si desvinculan el dispositivo, si
+ * WhatsApp corta la sesión o si el teléfono pasa ~14 días sin conectarse (ahí
+ * WhatsApp desvincula los dispositivos companion), los envíos dejan de salir y
+ * nada avisa: los recordatorios simplemente no llegan.
+ *
+ * Nunca lanza. Devuelve `{ ok, estado, detalle }` para que el que llama pueda
+ * distinguir los tres casos que importan: sesión vinculada, sesión caída, y
+ * Evolution inalcanzable (contenedor apagado, red mal, apikey equivocada).
+ */
+export async function estadoSesion() {
+  if (!whatsappConfigurado()) return { ok: false, estado: 'sin-configurar', detalle: 'Faltan las variables de Evolution' }
+
+  try {
+    const respuesta = await fetch(`${url()}/instance/connectionState/${instancia()}`, {
+      headers: { apikey: apiKey() },
+    })
+
+    if (!respuesta.ok) {
+      const detalle = await respuesta.text().catch(() => '')
+      return { ok: false, estado: 'error', detalle: `Evolution respondió ${respuesta.status}: ${detalle.slice(0, 200)}` }
+    }
+
+    const cuerpo = await respuesta.json().catch(() => ({}))
+    // La respuesta viene como { instance: { instanceName, state } }; se acepta
+    // también `state` en la raíz por si cambia entre versiones de Evolution.
+    const estado = cuerpo?.instance?.state ?? cuerpo?.state ?? 'desconocido'
+    return { ok: estado === 'open', estado, detalle: estado === 'open' ? null : `La sesión está en "${estado}"` }
+  } catch (err) {
+    return { ok: false, estado: 'inalcanzable', detalle: `No se pudo consultar Evolution: ${err.message}` }
+  }
+}
+
 /** Manda un texto. Lanza si Evolution responde mal, para que el que llama lo loguee. */
 export async function enviarWhatsApp(telefono, texto) {
   if (!whatsappConfigurado()) throw new Error('Evolution API no está configurado')

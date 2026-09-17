@@ -1,5 +1,6 @@
 import { prisma } from './prisma.js'
-import { enviarWhatsApp, whatsappConfigurado, normalizarTelefono } from './whatsapp.js'
+import { enviarWhatsApp, whatsappConfigurado, normalizarTelefono, estadoSesion } from './whatsapp.js'
+import { sendSystemEmail } from './mailer.js'
 import { getClinica } from './serializers.js'
 
 /**
@@ -121,9 +122,103 @@ export function armarMensaje({ turno, cliente, clinica }) {
   return lineas.join('\n')
 }
 
+// --- Vigilancia de la sesión de WhatsApp -----------------------------------
+//
+// La sesión se cae en silencio: si desvinculan el dispositivo, si WhatsApp corta
+// la sesión o si el teléfono pasa ~14 días sin conectarse, los envíos dejan de
+// salir y nada avisa. Sin esto, la veterinaria se enteraría porque un cliente no
+// vino, o mirando el log a mano.
+
+const REPETIR_ALERTA_MS = Number(process.env.ALERTA_REPETIR_HORAS || 12) * 60 * 60 * 1000
+
+// En memoria a propósito: un reinicio vuelve a avisar si sigue caída, que es
+// justamente lo que conviene. Persistirlo sería más estado para mantener a
+// cambio de silenciar el aviso después de un redeploy.
+let sesionOk = null
+let ultimaAlerta = 0
+
+/** A quién avisarle. Sin destinatario el aviso queda sólo en el log. */
+async function destinatarioAlerta() {
+  if (process.env.ALERTA_WHATSAPP_EMAIL) return process.env.ALERTA_WHATSAPP_EMAIL
+  const clinica = await getClinica().catch(() => null)
+  return clinica?.email || null
+}
+
+async function mandarAlerta(asunto, cuerpo) {
+  const to = await destinatarioAlerta()
+  if (!to) {
+    console.warn('No hay a quién avisarle: cargá el email en Configuración → Datos de la veterinaria, o definí ALERTA_WHATSAPP_EMAIL.')
+    return
+  }
+  try {
+    await sendSystemEmail({ to, subject: asunto, text: cuerpo })
+    console.log(`Aviso de WhatsApp enviado a ${to}`)
+  } catch (err) {
+    // Que falle el mail no puede tumbar la pasada de recordatorios.
+    console.error('No se pudo mandar el aviso por mail:', err.message)
+  }
+}
+
+/**
+ * Mira el estado de la sesión y avisa cuando cambia.
+ *
+ * Avisa en la transición, no en cada pasada: con un chequeo cada 5 minutos, una
+ * sesión caída un fin de semana serían casi 600 mails. Si sigue caída insiste
+ * cada ALERTA_REPETIR_HORAS, para que un aviso perdido no deje el problema
+ * invisible para siempre.
+ */
+export async function vigilarSesion(ahora = new Date()) {
+  const estado = await estadoSesion()
+
+  if (!estado.ok) {
+    const primeraVez = sesionOk !== false
+    const toca = ahora.getTime() - ultimaAlerta >= REPETIR_ALERTA_MS
+    if (primeraVez || toca) {
+      console.error(
+        `🔴 La sesión de WhatsApp no está operativa (${estado.estado}).` +
+          `${estado.detalle ? ` ${estado.detalle}.` : ''}` +
+          ' Los recordatorios de turno NO están saliendo.'
+      )
+      await mandarAlerta(
+        'Vet-Admin: los recordatorios por WhatsApp no están saliendo',
+        [
+          `La sesión de WhatsApp quedó en estado "${estado.estado}".`,
+          estado.detalle ? `Detalle: ${estado.detalle}` : null,
+          '',
+          'Mientras siga así, los recordatorios de turno no se mandan. Los turnos NO pierden el aviso:',
+          'al no marcarse como enviados, salen solos en cuanto la sesión vuelva — siempre que el turno',
+          'todavía no haya pasado.',
+          '',
+          'Para reconectar hay que volver a vincular el teléfono escaneando un QR nuevo. El paso a paso',
+          'está en vps/evolution.md del repo de infraestructura, sección 3.',
+        ].filter((l) => l !== null).join('\n')
+      )
+      ultimaAlerta = ahora.getTime()
+    }
+    sesionOk = false
+    return estado
+  }
+
+  if (sesionOk === false) {
+    console.log('✅ La sesión de WhatsApp volvió a estar operativa; los recordatorios pendientes salen en esta pasada.')
+    await mandarAlerta(
+      'Vet-Admin: la sesión de WhatsApp se recuperó',
+      'La sesión volvió a estado "open". Los recordatorios pendientes de turnos que todavía no pasaron se mandan en la próxima pasada.'
+    )
+  }
+  sesionOk = true
+  return estado
+}
+
 /** Una pasada. Exportada aparte para poder probarla sin esperar al intervalo. */
 export async function revisarRecordatorios(ahora = new Date()) {
   if (!whatsappConfigurado()) return { enviados: 0, fallidos: 0, salteados: 0 }
+
+  // Si la sesión no está vinculada no se intenta nada: los envíos fallarían y,
+  // como no se marcan, se reintentan solos cuando vuelva. Lo que sí se hace es
+  // avisar, porque de otro modo el corte es invisible.
+  const sesion = await vigilarSesion(ahora)
+  if (!sesion.ok) return { enviados: 0, fallidos: 0, salteados: 0, sesion: sesion.estado }
 
   // Sólo la franja que puede tener algún aviso vencido: no tiene sentido traer
   // la agenda entera. El margen extra cubre el desfase entre `fecha` (medianoche

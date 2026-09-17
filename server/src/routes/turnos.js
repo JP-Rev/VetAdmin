@@ -28,6 +28,18 @@ export const seReprogramo = (data, actual) => {
   return cambioFecha || cambioHora
 }
 
+/**
+ * ¿Se reactivó un turno que no estaba pendiente?
+ *
+ * Un turno cancelado y vuelto a Pendiente necesita avisarse de nuevo: si se
+ * canceló, al cliente se le dijo que no venga, así que las marcas del aviso
+ * anterior ya no representan nada. Sólo cuenta como reactivación si el estado
+ * guardado NO era Pendiente — pasar de Pendiente a Pendiente (lo que manda el
+ * formulario en cualquier edición) no toca nada.
+ */
+export const seReactivo = (data, actual) =>
+  Boolean(actual) && data.estado === 'Pendiente' && actual.estado !== 'Pendiente'
+
 const toUpdateData = (body, actual) => {
   assertOneOf(body.estado, ESTADOS_TURNO, 'estado')
   const data = {}
@@ -38,11 +50,11 @@ const toUpdateData = (body, actual) => {
   if (body.motivo !== undefined) data.motivo = body.motivo
   if (body.estado !== undefined) data.estado = body.estado
 
-  // Turno reprogramado: los avisos ya mandados eran del horario viejo, así que
-  // se borran las marcas y el cliente recibe el recordatorio del nuevo. Sin
-  // esto, quien reprograma no recibe ningún aviso -- justo el caso donde más
-  // falta hace.
-  if (seReprogramo(data, actual)) {
+  // Turno reprogramado o reactivado: los avisos ya mandados no representan lo
+  // que va a pasar, así que se borran las marcas y el cliente recibe el
+  // recordatorio que corresponde. Sin esto, quien reprograma no recibe ningún
+  // aviso -- justo el caso donde más falta hace.
+  if (seReprogramo(data, actual) || seReactivo(data, actual)) {
     data.recordatorioEnviadoAt = null
     data.recordatorioDiaAnteriorEnviadoAt = null
   }
