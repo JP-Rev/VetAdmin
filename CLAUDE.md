@@ -247,9 +247,11 @@ Por eso el guardia **no rearma el centinela mientras el aviso está en pantalla*
 llegar al sistema. Rearmar ahí dejaría a la persona **encerrada**, avisándole en
 bucle sin poder salir nunca — que es el modo de falla a evitar.
 
-`salir()` igual intenta `window.close()` por si la plataforma lo permite, y si a
-los 300 ms seguimos vivos el diálogo pasa a decir qué hacer: «tocá Atrás una vez
-más». Un botón que aparenta estar roto es peor que uno que explica.
+🔴 **El diálogo no tiene botón «Salir», y no es un olvido.** Una página no puede
+cerrar la app: no hay forma de que un botón haga lo que hace el gesto Atrás. Se
+intentó con `history.go(-2)` (no-op) y después con `window.close()` (bloqueado en
+la PWA de Android), y las dos veces el botón quedó prometiendo algo que no podía
+cumplir. **No volver a agregarlo**: el aviso dice qué tocar y con eso alcanza.
 
 ## Incidentes
 
