@@ -1,5 +1,6 @@
 
 import React, { ReactNode, useEffect, useState } from 'react';
+import { useCerrarConAtras } from '../lib/atras';
 
 interface ModalProps {
   isOpen: boolean;
@@ -11,6 +12,11 @@ interface ModalProps {
 
 export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 'md' }) => {
   const [showContent, setShowContent] = useState(false);
+
+  // El botón Atrás del teléfono cierra el modal en vez de salirse de la
+  // pantalla (o de la app). Acá alcanza para los 23 modales de la aplicación,
+  // porque todos usan este componente.
+  useCerrarConAtras(isOpen, onClose);
 
   useEffect(() => {
     if (isOpen) {

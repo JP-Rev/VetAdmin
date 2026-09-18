@@ -192,6 +192,46 @@ abierto después de elegir los minutos: no hay forma de cerrarlo desde la págin
 - 🔴 **No agregar validación de superposición de turnos.** La disponibilidad la
   maneja el profesional; la app permite solapar a propósito.
 
+## Botón Atrás del teléfono
+
+La app usa `HashRouter`, así que moverse entre pantallas siempre anduvo. Lo que
+no existía para el navegador eran los **overlays**: con un modal abierto, Atrás
+se llevaba puesta la pantalla entera —o la app, si era la primera— en vez de
+cerrar el modal.
+
+`useCerrarConAtras(activo, alCerrar)` en `lib/atras.ts` apila una entrada de
+historial mientras el overlay está abierto. La URL no cambia, así que el router
+ni se entera: sólo le damos al botón Atrás algo que consumir. Está puesto en
+`components/Modal.tsx` —lo que cubre **los 23 modales de una vez**, porque todos
+usan ese componente— y en el sidebar del celular.
+
+Tres cosas que no son obvias:
+
+- 🔴 **Al apilar se conserva el estado previo** (`{...history.state, marca}`).
+  React-router guarda ahí su `idx`, que es la profundidad de navegación.
+  Pisarlo deja al router sin saber a qué altura está.
+- **Al cerrar por otra vía** (la X, guardar, clic afuera) hay que sacar la
+  entrada, pero **sólo si sigue siendo la actual**. Varias pantallas navegan con
+  `replace: true` al cerrar el modal, lo que pisa nuestra entrada con la del
+  router: ahí un `back()` volvería a la pantalla anterior de verdad, reabriendo
+  el modal recién cerrado.
+- **`alCerrar` va por referencia.** Como dependencia del efecto haría que se
+  desmonte y remonte en cada render, apilando una entrada por render.
+
+### Aviso antes de salir
+
+`components/common/GuardiaSalida.tsx` apila un centinela al arrancar y pregunta
+antes de que Atrás cierre la app.
+
+🔴 **Para saber si estamos en el fondo se mira `idx`, no la marca del
+centinela.** Ninguna entrada del router lleva la marca, así que con ese criterio
+el aviso saltaba en **cada** Atrás entre pantallas. `esElFondo` da true cuando
+`idx` es 0 o no existe.
+
+⚠️ Salir no siempre funciona: en una pestaña común el navegador no deja que la
+página retroceda más allá de donde empezó. En la PWA instalada sí, que es el caso
+que motivó esto.
+
 ## Incidentes
 
 **04/09 — se perdieron datos en un `db push`.** El deploy de la tabla `Pesaje`

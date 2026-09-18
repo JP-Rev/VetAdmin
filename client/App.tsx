@@ -17,6 +17,8 @@ import { MedicalHistoryPage } from './pages/MedicalHistoryPage';
 import { SettingsPage } from './pages/SettingsPage'; 
 import { ExpensesPage } from './pages/ExpensesPage'; 
 import { AlertCircle, Loader2 } from 'lucide-react';
+import { GuardiaSalida } from './components/common/GuardiaSalida';
+import { useCerrarConAtras } from './lib/atras';
 
 const ScrollToTop: React.FC = () => {
   const { pathname } = useLocation();
@@ -81,6 +83,10 @@ const AppContent: React.FC = () => {
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
+
+  // En el celular el sidebar tapa la pantalla: Atrás tiene que cerrarlo, igual
+  // que a un modal, y no llevarse la pantalla de atrás.
+  useCerrarConAtras(isSidebarOpen, () => setIsSidebarOpen(false));
   
   useEffect(() => {
     const beforePrint = () => document.body.classList.add('printing');
@@ -106,6 +112,7 @@ const AppContent: React.FC = () => {
   return (
     <>
         <ScrollToTop />
+        <GuardiaSalida />
         <div className="min-h-screen bg-secondary-100 flex"> 
           <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
           
