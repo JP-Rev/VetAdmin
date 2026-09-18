@@ -228,9 +228,21 @@ centinela.** Ninguna entrada del router lleva la marca, así que con ese criteri
 el aviso saltaba en **cada** Atrás entre pantallas. `esElFondo` da true cuando
 `idx` es 0 o no existe.
 
-⚠️ Salir no siempre funciona: en una pestaña común el navegador no deja que la
-página retroceda más allá de donde empezó. En la PWA instalada sí, que es el caso
-que motivó esto.
+**Cerrar la app de verdad sólo es posible en la PWA instalada**, y las dos cosas
+de abajo están comprobadas en Chromium, no supuestas:
+
+- 🔴 **`history.go(-n)` no sirve para salir.** El navegador recorta el salto al
+  principio del historial: pedir más pasos de los que hay es un **no-op
+  silencioso**, la página queda viva y `history.length` no cambia. La primera
+  versión de esto usaba `go(-2)` y por eso el botón no hacía nada.
+- 🔴 **`window.close()` en una pestaña común tampoco cierra.** El navegador sólo
+  lo permite si la ventana la abrió un script, o si es una aplicación instalada.
+
+Por eso `salir()` intenta `window.close()` y, si a los 300 ms seguimos vivos,
+el diálogo cambia a un aviso que explica por qué — un botón que aparenta estar
+roto es peor que uno que dice qué pasó. El texto distingue si está instalada
+(`display-mode: standalone`) de si es una pestaña, porque el remedio es
+distinto.
 
 ## Incidentes
 

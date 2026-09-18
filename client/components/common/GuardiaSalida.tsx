@@ -20,6 +20,7 @@ import { armarSalida, esEntradaDeSalida, esElFondo } from '../../lib/atras';
  */
 export const GuardiaSalida: React.FC = () => {
   const [preguntando, setPreguntando] = useState(false);
+  const [noSePudo, setNoSePudo] = useState(false);
 
   useEffect(() => {
     armarSalida();
@@ -34,6 +35,7 @@ export const GuardiaSalida: React.FC = () => {
       // Estamos en el fondo: el próximo Atrás se sale. Rearmamos para que haya
       // algo que consumir y preguntamos.
       armarSalida();
+      setNoSePudo(false);
       setPreguntando(true);
     };
 
@@ -43,11 +45,27 @@ export const GuardiaSalida: React.FC = () => {
 
   if (!preguntando) return null;
 
+  /**
+   * Cerrar de verdad sólo es posible en la PWA instalada.
+   *
+   * 🔴 `history.go(-n)` NO sirve: el navegador recorta el salto al principio del
+   * historial, así que pedir más pasos de los que hay es un no-op silencioso
+   * (comprobado). No existe forma de "retroceder hasta salir".
+   *
+   * `window.close()` es lo único que queda, y el navegador sólo lo permite si la
+   * ventana la abrió un script — o si es una aplicación instalada. En una
+   * pestaña común no pasa nada, por eso hay que avisar en vez de dejar un botón
+   * que aparenta estar roto.
+   */
   const salir = () => {
-    setPreguntando(false);
-    // Dos pasos: el guardia que acabamos de rearmar, y la entrada de abajo.
-    window.history.go(-2);
+    window.close();
+    // Si seguimos acá, no nos dejaron cerrar.
+    window.setTimeout(() => setNoSePudo(true), 300);
   };
+
+  const instalada =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (window.navigator as { standalone?: boolean }).standalone === true;
 
   return (
     <div
@@ -67,10 +85,14 @@ export const GuardiaSalida: React.FC = () => {
           </div>
           <div>
             <h3 id="titulo-salida" className="text-lg font-semibold text-secondary-800">
-              ¿Salir de VetAdmin?
+              {noSePudo ? 'No se pudo cerrar' : '¿Salir de VetAdmin?'}
             </h3>
             <p className="mt-1 text-sm text-secondary-600">
-              Estás en la primera pantalla. Si volvés atrás otra vez, se cierra la aplicación.
+              {noSePudo
+                ? instalada
+                  ? 'El sistema no permitió cerrarla desde acá. Usá el gesto o el botón de inicio del teléfono.'
+                  : 'El navegador no deja que una pestaña se cierre sola. Cerrala a mano, o instalá VetAdmin desde el menú del navegador y este botón va a funcionar.'
+                : 'Estás en la primera pantalla. Si volvés atrás otra vez, se cierra la aplicación.'}
             </p>
           </div>
         </div>
@@ -79,20 +101,22 @@ export const GuardiaSalida: React.FC = () => {
             domina. Un "Salir" rojo y lleno atrae el pulgar justo hacia la
             acción que cierra la app y hace perder lo que se estaba cargando. */}
         <div className="mt-5 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-          <button
-            type="button"
-            onClick={salir}
-            className="px-4 py-2 text-sm font-medium rounded-md border border-secondary-300 text-error-700 hover:bg-error-50"
-          >
-            Salir
-          </button>
+          {!noSePudo && (
+            <button
+              type="button"
+              onClick={salir}
+              className="px-4 py-2 text-sm font-medium rounded-md border border-secondary-300 text-error-700 hover:bg-error-50"
+            >
+              Salir
+            </button>
+          )}
           <button
             type="button"
             autoFocus
             onClick={() => setPreguntando(false)}
             className="px-4 py-2 text-sm font-medium rounded-md bg-primary-700 text-white hover:bg-primary-800"
           >
-            Seguir en la app
+            {noSePudo ? 'Entendido' : 'Seguir en la app'}
           </button>
         </div>
       </div>
