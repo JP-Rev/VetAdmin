@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { LogOut } from 'lucide-react';
 import { armarSalida, esEntradaDeSalida, esElFondo } from '../../lib/atras';
 
@@ -22,10 +22,20 @@ export const GuardiaSalida: React.FC = () => {
   const [preguntando, setPreguntando] = useState(false);
   const [noSePudo, setNoSePudo] = useState(false);
 
+  // El manejador de popstate se registra una sola vez, así que lee el estado
+  // por referencia en vez de capturarlo.
+  const preguntandoRef = useRef(false);
+  useEffect(() => { preguntandoRef.current = preguntando; }, [preguntando]);
+
   useEffect(() => {
     armarSalida();
 
     const alVolver = (e: PopStateEvent) => {
+      // 🔴 Ya avisamos y el usuario volvió a tocar Atrás: ese es su "sí, salgo".
+      // NO rearmamos, así el Atrás llega al sistema y cierra la app. Rearmar acá
+      // dejaría al usuario encerrado, avisándole en bucle sin poder salir nunca.
+      if (preguntandoRef.current) return;
+
       // Volvimos a nuestro propio centinela: el usuario sigue adentro.
       if (esEntradaDeSalida(e.state)) return;
 
@@ -90,9 +100,9 @@ export const GuardiaSalida: React.FC = () => {
             <p className="mt-1 text-sm text-secondary-600">
               {noSePudo
                 ? instalada
-                  ? 'El sistema no permitió cerrarla desde acá. Usá el gesto o el botón de inicio del teléfono.'
-                  : 'El navegador no deja que una pestaña se cierre sola. Cerrala a mano, o instalá VetAdmin desde el menú del navegador y este botón va a funcionar.'
-                : 'Estás en la primera pantalla. Si volvés atrás otra vez, se cierra la aplicación.'}
+                  ? 'Android no deja que la app se cierre a sí misma. Tocá Atrás una vez más y se cierra.'
+                  : 'El navegador no deja que una pestaña se cierre sola. Cerrala a mano, o instalá VetAdmin desde el menú del navegador.'
+                : 'Estás en la primera pantalla. Si tocás Atrás otra vez, se cierra la aplicación.'}
             </p>
           </div>
         </div>

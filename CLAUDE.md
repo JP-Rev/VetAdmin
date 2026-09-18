@@ -228,21 +228,28 @@ centinela.** Ninguna entrada del router lleva la marca, así que con ese criteri
 el aviso saltaba en **cada** Atrás entre pantallas. `esElFondo` da true cuando
 `idx` es 0 o no existe.
 
-**Cerrar la app de verdad sólo es posible en la PWA instalada**, y las dos cosas
-de abajo están comprobadas en Chromium, no supuestas:
+### Quién cierra la app: el Atrás del sistema, no la página
 
-- 🔴 **`history.go(-n)` no sirve para salir.** El navegador recorta el salto al
-  principio del historial: pedir más pasos de los que hay es un **no-op
-  silencioso**, la página queda viva y `history.length` no cambia. La primera
-  versión de esto usaba `go(-2)` y por eso el botón no hacía nada.
-- 🔴 **`window.close()` en una pestaña común tampoco cierra.** El navegador sólo
-  lo permite si la ventana la abrió un script, o si es una aplicación instalada.
+🔴 **El que cierra la app es el gesto Atrás del sistema operativo. La página no
+puede cerrarse sola, y no hay forma de que lo haga.** Las tres cosas están
+comprobadas, no supuestas:
 
-Por eso `salir()` intenta `window.close()` y, si a los 300 ms seguimos vivos,
-el diálogo cambia a un aviso que explica por qué — un botón que aparenta estar
-roto es peor que uno que dice qué pasó. El texto distingue si está instalada
-(`display-mode: standalone`) de si es una pestaña, porque el remedio es
-distinto.
+- **`history.go(-n)` no sirve.** El navegador recorta el salto al principio del
+  historial: pedir más pasos de los que hay es un **no-op silencioso**, la página
+  queda viva y `history.length` ni se mueve. La primera versión usaba `go(-2)` y
+  por eso el botón «Salir» no hacía absolutamente nada.
+- **`window.close()` en una pestaña común no cierra**, y en la PWA de Android
+  tampoco: sólo se permite si la ventana la abrió un script.
+- **El Atrás del sistema sí cierra**, y eso es lo que hay que dejar pasar.
+
+Por eso el guardia **no rearma el centinela mientras el aviso está en pantalla**
+(`preguntandoRef`). Ese segundo Atrás es el «sí, salgo» del usuario y tiene que
+llegar al sistema. Rearmar ahí dejaría a la persona **encerrada**, avisándole en
+bucle sin poder salir nunca — que es el modo de falla a evitar.
+
+`salir()` igual intenta `window.close()` por si la plataforma lo permite, y si a
+los 300 ms seguimos vivos el diálogo pasa a decir qué hacer: «tocá Atrás una vez
+más». Un botón que aparenta estar roto es peor que uno que explica.
 
 ## Incidentes
 
